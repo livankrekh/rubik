@@ -6,6 +6,11 @@ def front(f, u, l, d, r, b):
     d.top_row = list(reversed(r.left_col))
     r.left_col = tmp
 
+def up(f, u, l, d, r, b):
+    u.rotate()
+    tmp = b.bottom_row
+    f.bottom_row = list(reversed(top_row))
+
 
 def print_faces(f, u, l, d, r, b):
     u_v = u.repr(False)
