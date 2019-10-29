@@ -145,13 +145,13 @@ class Rubik:
         
         for c in self.front_face:
             c.goal_state[2] += -90 if reverse else 90
-        front_was = np.copy(self.front_face)
+        front_was = np.copy(self.cubes)
         for i in range(3):
             for j in range(3):
                 frm = 0, i, j
                 fm = mf[(i, j)]
                 to = 0, fm[0], fm[1]
-                self.cubes[to] = front_was[i * 3 + j]
+                self.cubes[to] = front_was[frm]
     
     def rotate_up(self, reverse=False):
         rot_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
