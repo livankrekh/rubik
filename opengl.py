@@ -4,6 +4,7 @@ from OpenGL import GL as gl
 from OpenGL import GLU as glu
 import numpy as np
 import math
+from copy import copy, deepcopy
 
 class Cube():
 
@@ -31,11 +32,13 @@ class Cube():
 
     def __init__(self, pos, scale=1):
         self.pos = np.array(pos)
+        self.scale = scale
         self.vertices =  scale * (np.array(self.vertices) + pos)
 
         self.goal_state = np.array([0, 0, 0])
         self.animation_step = 1
         self.cur_state = np.array([0, 0, 0])
+        self.id = None
 
     def draw(self):
         gl.glPushMatrix()
@@ -62,6 +65,17 @@ class Cube():
     def update(self):
         der = self.goal_state - self.cur_state
         self.cur_state = self.cur_state + der * .1
+    
+    def __repr__(self):
+        return f'C[CUR STATE: {self.cur_state}|GOAL: {self.goal_state}]'
+
+    def __copy__(self):
+        v = Cube(self.pos, self.scale)
+        v.goal_state = np.copy(self.goal_state)
+        v.animation_step = self.animation_step
+        v.cur_state = np.copy(self.cur_state)
+        v.id = self.id
+        return v
 
 class Rubik:
     def __init__(self):
@@ -86,32 +100,107 @@ class Rubik:
         #             (1, -1, 0), (-1, 1, 0), (1, 1, 0), (-1, -1, 0)]
         
         cubes_pos = [[v * scale for v in _] for _ in cubes_pos]
-        self.cubes = [Cube(pos, .25) for pos in cubes_pos]
+        self.cubes = np.array([Cube(pos, .25) for pos in cubes_pos]).reshape((3, 3, 3))
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    self.cubes[i, j,k].id = (i, j, k)
     
     def draw(self):
-        for c in self.cubes:
+        for c in self.cubes.ravel():
             c.draw()
 
     def update(self):
-        for c in self.cubes:
+        for c in self.cubes.ravel():
             c.update()
-            if (c.goal_state == c.cur_state).all():
-                print("HERE, goal:", c.goal_state)
-                c.cur_state -= c.goal_state
-                c.goal_state = np.array([0, 0, 0])
+            # if np.isclose(c.cur_state, c.goal_state).all():
+            #     print("HERE, goal:", c.goal_state)
+            #     c.cur_state = c.cur_state % 360
+            #     c.goal_state = c.goal_state % 360
+            # c.cur_state = np.array([0, 0, 0])
     
     @property
     def front_face(self):
-        return [self.cubes[_] for _ in [0, 1, 2, 3, 4, 5, 6, 7, 8]]
+        return self.cubes[0, :, :].ravel()
     
     @property
     def up_face(self):
-        return [self.cubes[_] for _ in [0, 1, 2, 9, 10, 11, 18, 19, 20]]
+        return self.cubes[:, 0, :].ravel()
+
+    @property
+    def down_face(self):
+        return self.cubes[:, 2, :].ravel()
+    
+    @property
+    def back_face(self):
+        return self.cubes[2, :, :].ravel()
 
     def rotate_front(self, reverse=False):
-        for c in rubik.front_face:
-            c.goal_state[2] += -90 if reverse else 90
+        front_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
+                     (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
+                     (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
+        mf = {v: k for k, v in front_map.items()}
+        if reverse:
+            mf = front_map
         
+        for c in self.front_face:
+            c.goal_state[2] += -90 if reverse else 90
+        front_was = np.copy(self.front_face)
+        for i in range(3):
+            for j in range(3):
+                frm = 0, i, j
+                fm = mf[(i, j)]
+                to = 0, fm[0], fm[1]
+                self.cubes[to] = front_was[i * 3 + j]
+    
+    def rotate_up(self, reverse=False):
+        rot_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
+                (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
+                (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
+        mf = {v: k for k, v in rot_map.items()}
+        if reverse:
+            mf = rot_map
+
+        for c in self.up_face:
+            c.goal_state[1] += -90 if reverse else 90
+        
+        up_was = [copy(c) for c in self.up_face]
+        for i in range(3):
+            for j in range(3):
+                frm = i, 0, j
+                fm = mf[(i, j)]
+                to = fm[0], 0, fm[1]
+                self.cubes[to] = up_was[i * 3 + j]
+    
+    def rotate_back(self, reverse=False):
+        front_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
+                (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
+                (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
+        
+        mf = {v: k for k, v in front_map.items()}
+        for c in self.back_face:
+            c.goal_state[2] -= -90 if reverse else 90
+        for i in range(3):
+            for j in range(3):
+                frm = 2, i, j
+                to = 2, *front_map[(i, j)]
+                print(frm, self.cubes[frm], self.cubes[to])
+                self.cubes[frm], self.cubes[to] = self.cubes[to], self.cubes[frm]
+    
+    def rotate_down(self, reverse=False):
+        front_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
+                (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
+                (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
+        
+        for c in self.down_face:
+            c.goal_state[1] -= -90 if reverse else 90
+        for i in range(3):
+            for j in range(3):
+                frm = i, 0, j
+                fm = front_map[(i, j)]
+                to = fm[0], 0, fm[1]
+                print(frm, self.cubes[frm], self.cubes[to])
+                self.cubes[frm], self.cubes[to] = self.cubes[to], self.cubes[frm]
         
 
 if __name__ == '__main__':
@@ -186,15 +275,20 @@ if __name__ == '__main__':
             if event.type == pygame.KEYDOWN:
                 rev = pygame.key.get_mods() & pygame.KMOD_SHIFT
                 if event.key == pygame.K_f:
-                    print("Front")
-                    print("Reverse:", rev)
-                    rubik.rotate_front()
+                    # print("Front")
+                    # print("Reverse:", rev)
+                    rubik.rotate_front(rev)
 
                 elif event.key == pygame.K_l:
                     print("LEFT, rev:", rev)
                 elif event.key == pygame.K_u:
-                    for c in rubik.up_face:
-                        c.goal_state[1] += -90 if rev else 90
+                    rubik.rotate_up(rev)
+                
+                elif event.key == pygame.K_b:
+                    rubik.rotate_back(rev)
+                
+                elif event.key == pygame.K_d:
+                    rubik.rotate_down(rev)
 
         # gl.glRotatef(1, 3, 1, 1)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT|gl.GL_DEPTH_BUFFER_BIT)
