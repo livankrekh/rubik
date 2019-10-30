@@ -39,10 +39,13 @@ class Cube():
         self.animation_step = 1
         self.cur_state = np.array([0, 0, 0])
         self.id = None
+        self.x = np.array([1, 0, 0])
+        self.y = np.array([0, 1, 0])
+        self.z = np.array([0, 0, 1])
+        self.t = np.diag(np.array([1, 1, 1, 1])).astype(np.float64)
 
     def draw(self):
         gl.glPushMatrix()
-
         gl.glRotatef(-self.cur_state[0], 1, 0, 0)
         gl.glRotatef(-self.cur_state[1], 0, 1, 0)
         gl.glRotatef(-self.cur_state[2], 0, 0, 1)
@@ -79,32 +82,16 @@ class Cube():
 
 class Rubik:
     def __init__(self):
-        cubes_pos = [(1, 1, 1), (0, 1, 1), (-1, 1, 1),  # Front top row
-                     (1, 0, 1), (0, 0, 1), (-1, 0, 1),  # Front center row
-                     (1, -1, 1), (0, -1, 1), (-1, -1, 1), # Front down row
-                     (1, 1, 0), (0, 1, 0), (-1, 1, 0),  # Center top row
-                     (1, 0, 0), (0, 0, 0), (-1, 0, 0),  # Center center row
-                     (1, -1, 0), (0, -1, 0), (-1, -1, 0), # Center down row
-                     (1, 1, -1), (0, 1, -1), (-1, 1, -1),  # Back top row
-                     (1, 0, -1), (0, 0, -1), (-1, 0, -1),  # Back center row
-                     (1, -1, -1), (0, -1, -1), (-1, -1, -1), # Back down row
-                ]
-         #       (-1, -1, 1), (-1, 1, 1), (1, -1, 1), (1, 1, 1),
-          #      (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0),
-           #     (1, -1, 0), (-1, 1, 0), (1, 1, 0), (-1, -1, 0)]
-        
         scale = 2.25
-        # cubes_pos = [(0, 0, 1), (-1, 0, 1), (1, 0, 1), (0, -1, 1), (0, 1, 1),
-        #             (-1, -1, 1), (-1, 1, 1), (1, -1, 1), (1, 1, 1),
-        #             (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0),
-        #             (1, -1, 0), (-1, 1, 0), (1, 1, 0), (-1, -1, 0)]
-        
-        cubes_pos = [[v * scale for v in _] for _ in cubes_pos]
-        self.cubes = np.array([Cube(pos, .25) for pos in cubes_pos]).reshape((3, 3, 3))
+    
+        pos = []
         for i in range(3):
             for j in range(3):
                 for k in range(3):
-                    self.cubes[i, j,k].id = (i, j, k)
+                    pos.append(Cube((scale * (i - 1), scale * (j - 1), scale * (k - 1)), .25))
+            
+        self.cubes = np.array(pos).reshape((3, 3, 3))
+
     
     def draw(self):
         for c in self.cubes.ravel():
@@ -113,19 +100,14 @@ class Rubik:
     def update(self):
         for c in self.cubes.ravel():
             c.update()
-            # if np.isclose(c.cur_state, c.goal_state).all():
-            #     print("HERE, goal:", c.goal_state)
-            #     c.cur_state = c.cur_state % 360
-            #     c.goal_state = c.goal_state % 360
-            # c.cur_state = np.array([0, 0, 0])
-    
+
     @property
     def front_face(self):
-        return self.cubes[0, :, :].ravel()
+        return self.cubes[:, :, 2].ravel()
     
     @property
     def up_face(self):
-        return self.cubes[:, 0, :].ravel()
+        return self.cubes[:, 2, :].ravel()
 
     @property
     def down_face(self):
@@ -135,90 +117,9 @@ class Rubik:
     def back_face(self):
         return self.cubes[2, :, :].ravel()
 
-    def rotate_front(self, reverse=False):
-        front_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
-                     (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
-                     (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
-        mf = {v: k for k, v in front_map.items()}
-        if reverse:
-            mf = front_map
-        
-        for c in self.front_face:
-            c.goal_state[2] += -90 if reverse else 90
-        front_was = np.copy(self.cubes)
-        for i in range(3):
-            for j in range(3):
-                frm = 0, i, j
-                fm = mf[(i, j)]
-                to = 0, fm[0], fm[1]
-                self.cubes[to] = front_was[frm]
-    
-    def rotate_up(self, reverse=False):
-        rot_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
-                (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
-                (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
-        mf = {v: k for k, v in rot_map.items()}
-        if reverse:
-            mf = rot_map
 
-        for c in self.up_face:
-            c.goal_state[1] += -90 if reverse else 90
         
-        up_was = [copy(c) for c in self.up_face]
-        for i in range(3):
-            for j in range(3):
-                frm = i, 0, j
-                fm = mf[(i, j)]
-                to = fm[0], 0, fm[1]
-                self.cubes[to] = up_was[i * 3 + j]
-    
-    def rotate_back(self, reverse=False):
-        front_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
-                (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
-                (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
-        
-        mf = {v: k for k, v in front_map.items()}
-        for c in self.back_face:
-            c.goal_state[2] -= -90 if reverse else 90
-        for i in range(3):
-            for j in range(3):
-                frm = 2, i, j
-                to = 2, *front_map[(i, j)]
-                print(frm, self.cubes[frm], self.cubes[to])
-                self.cubes[frm], self.cubes[to] = self.cubes[to], self.cubes[frm]
-    
-    def rotate_down(self, reverse=False):
-        front_map = {(0, 0): (0, 2), (0, 1): (1, 2), (0, 2): (2, 2),
-                (1, 0): (0, 1), (1, 1): (1, 1), (1, 2): (2, 1),
-                (2, 0): (0, 0), (2, 1): (1, 0), (2, 2): (2, 0)}
-        
-        for c in self.down_face:
-            c.goal_state[1] -= -90 if reverse else 90
-        for i in range(3):
-            for j in range(3):
-                frm = i, 0, j
-                fm = front_map[(i, j)]
-                to = fm[0], 0, fm[1]
-                print(frm, self.cubes[frm], self.cubes[to])
-                self.cubes[frm], self.cubes[to] = self.cubes[to], self.cubes[frm]
-        
-
 if __name__ == '__main__':
-    # vertices = ((-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1), # lower left corner, clockwise
-    #             (-1, -1, 1), (-1, 1, 1), (1, 1, 1), (1, -1, 1))  # upper left corner, clockwise
-    
-    # edges = ((0, 1), (0, 3), (0, 4),
-    #          (2, 1), (2, 3), (2, 7),
-    #          (6, 3), (6, 4), (6, 7),
-    #          (5, 1), (5, 4), (5, 7))
-
-    # # Down, Left, Back, Right, Front, Up
-    # surfaces = ((0, 1, 2, 3), # Down
-    #             (0, 1, 4, 5), # Left
-    #             (1, 2, 6, 5), # Back
-    #             (2, 6, 7, 3), # Right
-    #             (0, 4, 7, 3)) # Front
-    
 
     pygame.init()
     w, h = 800, 600
@@ -227,15 +128,6 @@ if __name__ == '__main__':
     gl.glTranslatef(.0, .0, -5)
     gl.glEnable(gl.GL_DEPTH_TEST) 
 
-    
-    # scale = 2.25
-    # cubes_pos = [(0, 0, 1), (-1, 0, 1), (1, 0, 1), (0, -1, 1), (0, 1, 1),
-    #              (-1, -1, 1), (-1, 1, 1), (1, -1, 1), (1, 1, 1),
-    #              (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0),
-    #              (1, -1, 0), (-1, 1, 0), (1, 1, 0), (-1, -1, 0)]
-    
-    # cubes_pos = [[v * scale for v in _] for _ in cubes_pos]
-    # cubes = [Cube(pos, .25) for pos in cubes_pos]
 
     rubik = Rubik()
     lastPosX = 0;
@@ -275,12 +167,9 @@ if __name__ == '__main__':
             if event.type == pygame.KEYDOWN:
                 rev = pygame.key.get_mods() & pygame.KMOD_SHIFT
                 if event.key == pygame.K_f:
-                    # print("Front")
-                    # print("Reverse:", rev)
                     rubik.rotate_front(rev)
 
                 elif event.key == pygame.K_l:
-                    print("LEFT, rev:", rev)
                 elif event.key == pygame.K_u:
                     rubik.rotate_up(rev)
                 
