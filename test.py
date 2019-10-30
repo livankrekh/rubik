@@ -1,10 +1,12 @@
 def front(f, u, l, d, r, b):
     f.rotate()
-    tmp = u.bottom_row
-    u.bottom_row = list(reversed(l.right_col))
-    l.right_col = d.top_row
-    d.top_row = list(reversed(r.left_col))
-    r.left_col = tmp
+    # tmp = u.bottom_row
+    # u.bottom_row = list(reversed(l.right_col))
+    # l.right_col = d.top_row
+    # d.top_row = list(reversed(r.left_col))
+    # r.left_col = tmp
+    # 0 1 2 3 4 5 6 7
+    # 2 4 7 1 6 0 3 5
 
 def up(f, u, l, d, r, b):
     u.rotate()
@@ -49,6 +51,11 @@ class Face(list):
     cmap = {**u_colors, **l_colors, **f_colors, **r_colors, **b_colors, **d_colors}
     cmap_name = {'U': 'W', 'F': 'G', 'L': 'O', 'R': 'R', 'B': 'Y', 'D': 'B'}
 
+
+    # 0 1 2 3 4 5 6 7
+    # 2 4 7 1 6 0 3 5
+    rot_map = {0: 2, 1: 4, 2: 7, 3: 1, 4: 6, 5: 0, 6: 3, 7: 5}
+    rrot_map = {v: k for k, v in rot_map.items()}
     def __init__(self, name, values):
         self.name = name
         self.v = values
@@ -56,7 +63,7 @@ class Face(list):
         self.center = lambda x: str(x).center(2)
     
     def repr(self, newlines=True, color=True):
-
+        """ Some nasty code to output everything in pretty format """
         if color:
             vals = [self.cmap[_] for _ in self.v[:3]]
         else:
@@ -89,10 +96,82 @@ class Face(list):
         self.v[k] = v
     
     def rotate(self, reverse=False):
-        if reverse:
-            self.v = self.v[2:] + self.v[:2]
-        else:
-            self.v = self.v[-2:] + self.v[:-2]
+        # old = self.v[:]
+        # map = self.rot_map
+        # if reverse:
+        #     map = self.rrot_map
+        # for i in range(8):
+        #     self.v[map[i]] = old[i]
+        self.permute([self.tl, self.tr, self.dr, self.dl])
+
+    @property
+    def tl(self):
+        return 0
+    
+    @tl.setter
+    def tl(self, v):
+        self.v[0] = v
+    
+    @property
+    def tc(self):
+        return 1
+    
+    @tc.setter
+    def tc(self, v):
+        self.v[1] = v
+    
+    @property
+    def tr(self):
+        return 2
+    
+    @tr.setter
+    def tr(self, v):
+        self.v[2] = v
+    
+    @property
+    def cl(self):
+        return 3
+
+    @cl.setter
+    def cl(self, v):
+        self.v[3] = v
+    
+    @property
+    def cr(self):
+        return 4
+    
+    @cr.setter
+    def cr(self, v):
+        self.v[4] = v
+    
+    @property
+    def dl(self):
+        return 5
+    
+    @dl.setter
+    def dl(self, v):
+        self.v[5] = v
+    
+    @property
+    def dc(self):
+        return 6
+    
+    @dc.setter
+    def dc(self, v):
+        self.v[6] = v
+    
+    @property
+    def dr(self):
+        return 7
+    
+    @dr.setter
+    def dr(self, v):
+        self.v[7] = v
+    
+    def permute(self, seq, reverse=False):
+        pass
+
+
     
     @property
     def bottom_row(self):
@@ -153,8 +232,11 @@ if __name__ == '__main__':
     print()
     print_faces(ff, uu, ll, dd, rr, bb, color=True)
 
-    # front(ff, uu, ll, dd, rr, bb)
-    # print()
+    front(ff, uu, ll, dd, rr, bb)
+    print()
+    print_faces(ff, uu, ll, dd, rr, bb)
+    print()
+    print_faces(ff, uu, ll, dd, rr, bb, color=True)
     # print_faces(ff, uu, ll, dd, rr, bb)
     # front(ff, uu, ll, dd, rr, bb)
     # print()
