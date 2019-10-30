@@ -46,9 +46,9 @@ class Cube():
 
     def draw(self):
         gl.glPushMatrix()
-        gl.glRotatef(-self.cur_state[0], 1, 0, 0)
-        gl.glRotatef(-self.cur_state[1], 0, 1, 0)
-        gl.glRotatef(-self.cur_state[2], 0, 0, 1)
+        gl.glRotatef(self.cur_state[0], *self.x)
+        gl.glRotatef(self.cur_state[1], *self.y)
+        gl.glRotatef(self.cur_state[2], *self.z)
 
         gl.glBegin(gl.GL_LINES)
         for edge in self.edges:
@@ -117,6 +117,19 @@ class Rubik:
     def back_face(self):
         return self.cubes[2, :, :].ravel()
 
+    
+    def rotate_front(self, rev=1):
+        for c in self.cubes.ravel():
+            c.goal_state += c.z * rev * 90
+            c.x, c.y = -c.y * rev, c.x * rev
+            
+            swap = (c.goal_state == 180).astype(int) * -1
+            # c.goal_state[0], c.goal_state[1] = -c.goal_state[1] * rev, c.goal_state[0] * rev
+
+    def rotate_up(self, rev=1):
+        for c in self.cubes.ravel():
+            c.goal_state += c.y * rev * 90
+            # c.x, c.z = c.z * rev, -c.x * rev
 
         
 if __name__ == '__main__':
@@ -166,10 +179,12 @@ if __name__ == '__main__':
             
             if event.type == pygame.KEYDOWN:
                 rev = pygame.key.get_mods() & pygame.KMOD_SHIFT
+                rev = -1 if rev else 1
                 if event.key == pygame.K_f:
                     rubik.rotate_front(rev)
 
                 elif event.key == pygame.K_l:
+                    rubik.rotate_left(rev)
                 elif event.key == pygame.K_u:
                     rubik.rotate_up(rev)
                 
