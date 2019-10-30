@@ -46,9 +46,13 @@ class Cube():
 
     def draw(self):
         gl.glPushMatrix()
-        gl.glRotatef(self.cur_state[0], *self.x)
-        gl.glRotatef(self.cur_state[1], *self.y)
-        gl.glRotatef(self.cur_state[2], *self.z)
+        gl.glRotatef(self.cur_state[0], 1, 0, 0)
+        gl.glRotatef(self.cur_state[1], 0, 1, 0)
+        gl.glRotatef(self.cur_state[2], 0, 0, 1)
+        self.t[:3, 0] = self.x
+        self.t[:3, 1] = self.y
+        self.t[:3, 2] = self.z
+        gl.glMultMatrixf(self.t)
 
         gl.glBegin(gl.GL_LINES)
         for edge in self.edges:
@@ -119,17 +123,30 @@ class Rubik:
 
     
     def rotate_front(self, rev=1):
+        c = self.cubes[0, 0, 0]
+        print("BEFORE:", c.x, c.y, c.z, "S:", c.goal_state)
+
         for c in self.cubes.ravel():
             c.goal_state += c.z * rev * 90
-            c.x, c.y = -c.y * rev, c.x * rev
-            
-            swap = (c.goal_state == 180).astype(int) * -1
-            # c.goal_state[0], c.goal_state[1] = -c.goal_state[1] * rev, c.goal_state[0] * rev
+            # c.x, c.y = -c.y * rev, c.x * rev
+        print("AFTER:", c.x, c.y, c.z, "S:", c.goal_state)
 
     def rotate_up(self, rev=1):
+        c = self.cubes[0, 0, 0]
+        print("BEFORE:", c.x, c.y, c.z, "S:", c.goal_state)
         for c in self.cubes.ravel():
             c.goal_state += c.y * rev * 90
+            # c.x, c.z = -c.z * rev, c.x * rev
+            if (np.abs(c.goal_state[abs(c.y) == 1]) % 180 == 0).any():
+                pass
+                # c.x *= -1
+                # c.z *= -1
+                # if (np.abs(c.goal_state[abs(c.y) == 1]) > 360).any():
+                #     c.goal_state[abs(c.y) == 1] -= 360
+                #     c.cur_state[abs(c.y) == 1] -= 360
+
             # c.x, c.z = c.z * rev, -c.x * rev
+        print("AFTER:", c.x, c.y, c.z, "S:", c.goal_state)
 
         
 if __name__ == '__main__':

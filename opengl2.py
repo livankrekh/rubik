@@ -16,8 +16,7 @@ colors = ((1, 0, 0), (0, 1, 0), (1, 0.5, 0), (1, 1, 0), (1, 1, 1), (0, 0, 1))
 class Cube():
     def __init__(self, id, N, scale):
         self.N = N
-        self.scale = scale
-        self.init_i = [*id]
+        # self.scale = 1
         self.current_i = [*id]
         self.rot = [[1 if i==j else 0 for i in range(3)] for j in range(3)]
 
@@ -38,8 +37,10 @@ class Cube():
             self.current_i[i] if dir > 0 else self.N - 1 - self.current_i[i] )
 
     def transformMat(self):
-        scaleA = [[s*self.scale for s in a] for a in self.rot]  
-        scaleT = [(p-(self.N-1)/2)*2.1*self.scale for p in self.current_i]
+        # scaleA = [[s*self.scale for s in a] for a in self.rot]  
+        scaleT = [(p-(self.N-1)/2)*2.1 for p in self.current_i]
+        scaleA = self.rot
+        # scaleT = self.current_i
         return [*scaleA[0], 0, *scaleA[1], 0, *scaleA[2], 0, *scaleT, 1]
 
     def draw(self, col, surf, vert, animate, angle, axis, slice, dir):
