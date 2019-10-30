@@ -19,7 +19,6 @@ class Cube():
         self.scale = scale
         self.init_i = [*id]
         self.current_i = [*id]
-        print("init_i:", self.init_i)
         self.rot = [[1 if i==j else 0 for i in range(3)] for j in range(3)]
 
     def isAffected(self, axis, slice, dir):
@@ -34,7 +33,6 @@ class Cube():
         for k in range(3):
             self.rot[k][i], self.rot[k][j] = -self.rot[k][j]*dir, self.rot[k][i]*dir
 
-        print(self.current_i)
         self.current_i[i], self.current_i[j] = (
             self.current_i[j] if dir < 0 else self.N - 1 - self.current_i[j],
             self.current_i[i] if dir > 0 else self.N - 1 - self.current_i[i] )
@@ -42,7 +40,6 @@ class Cube():
     def transformMat(self):
         scaleA = [[s*self.scale for s in a] for a in self.rot]  
         scaleT = [(p-(self.N-1)/2)*2.1*self.scale for p in self.current_i]
-        # print("WTF", [*scaleA[0], 0, *scaleA[1], 0, *scaleA[2], 0, *scaleT, 1])
         return [*scaleA[0], 0, *scaleA[1], 0, *scaleA[2], 0, *scaleT, 1]
 
     def draw(self, col, surf, vert, animate, angle, axis, slice, dir):
