@@ -1,7 +1,7 @@
 import pygame
 import random
 from pygame.locals import *
-
+import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
@@ -18,7 +18,7 @@ class Cube():
         self.N = N
         # self.scale = 1
         self.current_i = [*id]
-        self.rot = [[1 if i==j else 0 for i in range(3)] for j in range(3)]
+        self.rot = np.array([[1 if i==j else 0 for i in range(3)] for j in range(3)])
 
     def isAffected(self, axis, slice, dir):
         return self.current_i[axis] == slice
@@ -29,8 +29,12 @@ class Cube():
             return
 
         i, j = (axis+1) % 3, (axis+2) % 3
+        print("R before:")
+        print(self.rot)
         for k in range(3):
             self.rot[k][i], self.rot[k][j] = -self.rot[k][j]*dir, self.rot[k][i]*dir
+        print("R after:")
+        print(self.rot)
 
         self.current_i[i], self.current_i[j] = (
             self.current_i[j] if dir < 0 else self.N - 1 - self.current_i[j],
@@ -38,7 +42,7 @@ class Cube():
 
     def transformMat(self):
         # scaleA = [[s*self.scale for s in a] for a in self.rot]  
-        scaleT = [(p-(self.N-1)/2)*2.1 for p in self.current_i]
+        scaleT = [p * 2.25 for p in self.current_i]
         scaleA = self.rot
         # scaleT = self.current_i
         return [*scaleA[0], 0, *scaleA[1], 0, *scaleA[2], 0, *scaleT, 1]
@@ -105,10 +109,10 @@ class EntireCube():
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
             if animate:
-                if animate_ang >= 90:
-                    for cube in self.cubes:
-                        cube.update(*action)
-                    animate, animate_ang = False, 0
+                # if animate_ang >= 90:
+                for cube in self.cubes:
+                    cube.update(*action)
+                animate, animate_ang = False, 0
 
             for cube in self.cubes:
                 cube.draw(colors, surfaces, vertices, animate, animate_ang, *action)

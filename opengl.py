@@ -127,15 +127,16 @@ class Rubik:
         print("BEFORE:", c.x, c.y, c.z, "S:", c.goal_state)
 
         for c in self.cubes.ravel():
-            c.goal_state += c.z * rev * 90
-            # c.x, c.y = -c.y * rev, c.x * rev
+            c.goal_state[2] += rev * 90
+            c.x, c.y = -c.y * rev, c.x * rev
+        # self.cubes[0, :, :], self.cubes[1, :, :]
         print("AFTER:", c.x, c.y, c.z, "S:", c.goal_state)
 
     def rotate_up(self, rev=1):
         c = self.cubes[0, 0, 0]
         print("BEFORE:", c.x, c.y, c.z, "S:", c.goal_state)
         for c in self.cubes.ravel():
-            c.goal_state += c.y * rev * 90
+            c.goal_state[1] += rev * 90
             # c.x, c.z = -c.z * rev, c.x * rev
             if (np.abs(c.goal_state[abs(c.y) == 1]) % 180 == 0).any():
                 pass

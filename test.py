@@ -12,13 +12,13 @@ def up(f, u, l, d, r, b):
     f.bottom_row = list(reversed(top_row))
 
 
-def print_faces(f, u, l, d, r, b):
-    u_v = u.repr(False)
-    l_v = l.repr(False)
-    f_v = f.repr(False)
-    r_v = r.repr(False)
-    b_v = b.repr(False)
-    d_v = d.repr(False)
+def print_faces(f, u, l, d, r, b, color=False):
+    u_v = u.repr(False, color=color)
+    l_v = l.repr(False, color=color)
+    f_v = f.repr(False, color=color)
+    r_v = r.repr(False, color=color)
+    b_v = b.repr(False, color=color)
+    d_v = d.repr(False, color=color)
 
     left_pad = f'{(len(l_v[0])) * " "}|'
     right_pad = f'|{(len(r_v[0]) + len(r_v[0])) * " "}'
@@ -39,14 +39,44 @@ def print_faces(f, u, l, d, r, b):
     print(combined)
 
 class Face(list):
+    u_colors = {v: 'W' for v in [1, 2, 3, 4, 5, 6, 7, 8]}
+    l_colors = {v: 'O' for v in [9, 10, 11, 18, 19, 24, 25, 26]}
+    f_colors = {v: 'G' for v in [12, 13, 14, 20, 21, 27, 28, 29]}
+    r_colors = {v: 'R' for v in [15, 16, 17, 22, 23, 30, 31, 32]}
+    b_colors = {v: 'Y' for v in [33, 34, 35, 36, 37, 38, 39, 40]}
+    d_colors = {v: 'B' for v in [41, 42, 43, 44, 45, 46, 47, 48]}
+
+    cmap = {**u_colors, **l_colors, **f_colors, **r_colors, **b_colors, **d_colors}
+    cmap_name = {'U': 'W', 'F': 'G', 'L': 'O', 'R': 'R', 'B': 'Y', 'D': 'B'}
+
     def __init__(self, name, values):
         self.name = name
         self.v = values
+
+        self.center = lambda x: str(x).center(2)
     
-    def repr(self, newlines=True):
-        r1 = ' '.join(str(_).center(2) for _ in self.v[:3])
-        r2 = f'{str(self.v[7]).center(2)} {str(self.name).center(2)} {str(self.v[3]).center(2)}'
-        r3 = f'{str(self.v[6]).center(2)} {str(self.v[5]).center(2)} {str(self.v[4]).center(2)}'
+    def repr(self, newlines=True, color=True):
+
+        if color:
+            vals = [self.cmap[_] for _ in self.v[:3]]
+        else:
+            vals = self.v[:3]
+
+        r1 = ' '.join(map(self.center, vals))
+
+        if color:
+            vals = [self.cmap[self.v[3]], self.cmap_name[self.name], self.cmap[self.v[4]]]
+        else:
+            vals = [self.v[3], self.name, self.v[4]]
+
+        r2 = ' '.join(map(self.center, vals))
+
+        if color:
+            vals = [self.cmap[_] for _ in self.v[-3:]]
+        else:
+            vals = self.v[-3:]
+
+        r3 = ' '.join(map(self.center, vals))
         if newlines:
             return '\n'.join((r1, r2, r3))
         else:
@@ -107,9 +137,9 @@ class Face(list):
 
 if __name__ == '__main__':
     u = [1, 2, 3, 4, 5, 6, 7, 8]
-    l = [9, 10, 11, 12, 13, 14, 15, 16]
-    f = [17, 18, 19, 20, 21, 22, 23, 24]
-    r = [25, 26, 27, 28, 29, 30, 31, 32]
+    l = [9, 10, 11, 18, 19, 24, 25, 26]
+    f = [12, 13, 14, 20, 21, 27, 28, 29]
+    r = [15, 16, 17, 22, 23, 30, 31, 32]
     b = [33, 34, 35, 36, 37, 38, 39, 40]
     d = [41, 42, 43, 44, 45, 46, 47, 48]
 
@@ -120,11 +150,18 @@ if __name__ == '__main__':
     rr = Face('R', r)
     bb = Face('B', b)
     print_faces(ff, uu, ll, dd, rr, bb)
-    front(ff, uu, ll, dd, rr, bb)
-    print_faces(ff, uu, ll, dd, rr, bb)
-    front(ff, uu, ll, dd, rr, bb)
-    print_faces(ff, uu, ll, dd, rr, bb)
-    front(ff, uu, ll, dd, rr, bb)
-    print_faces(ff, uu, ll, dd, rr, bb)
-    front(ff, uu, ll, dd, rr, bb)
-    print_faces(ff, uu, ll, dd, rr, bb)
+    print()
+    print_faces(ff, uu, ll, dd, rr, bb, color=True)
+
+    # front(ff, uu, ll, dd, rr, bb)
+    # print()
+    # print_faces(ff, uu, ll, dd, rr, bb)
+    # front(ff, uu, ll, dd, rr, bb)
+    # print()
+    # print_faces(ff, uu, ll, dd, rr, bb)
+    # front(ff, uu, ll, dd, rr, bb)
+    # print()
+    # print_faces(ff, uu, ll, dd, rr, bb)
+    # front(ff, uu, ll, dd, rr, bb)
+    # print()
+    # print_faces(ff, uu, ll, dd, rr, bb)
