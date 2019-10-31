@@ -6,8 +6,8 @@ class Cubit:
     l_colors = {v: 'O' for v in [9, 10, 11, 18, 19, 24, 25, 26]}
     f_colors = {v: 'G' for v in [12, 13, 14, 20, 21, 27, 28, 29]}
     r_colors = {v: 'R' for v in [15, 16, 17, 22, 23, 30, 31, 32]}
-    b_colors = {v: 'Y' for v in [33, 34, 35, 36, 37, 38, 39, 40]}
-    d_colors = {v: 'B' for v in [41, 42, 43, 44, 45, 46, 47, 48]}
+    b_colors = {v: 'Y' for v in [41, 42, 43, 44, 45, 46, 47, 48]}
+    d_colors = {v: 'B' for v in [33, 34, 35, 36, 37, 38, 39, 40]}
 
     cmap = {**u_colors, **l_colors, **f_colors, **r_colors, **b_colors, **d_colors}
 
@@ -73,8 +73,8 @@ class Cubik:
     l = [9, 10, 11, 18, 19, 24, 25, 26]
     f = [12, 13, 14, 20, 21, 27, 28, 29]
     r = [15, 16, 17, 22, 23, 30, 31, 32]
-    b = [33, 34, 35, 36, 37, 38, 39, 40]
-    d = [41, 42, 43, 44, 45, 46, 47, 48]
+    d = [33, 34, 35, 36, 37, 38, 39, 40]
+    b = [41, 42, 43, 44, 45, 46, 47, 48]
 
     def __init__(self):
         self.faces = [Face(name, values) for name, values in zip('ULFRBD', [self.u, self.l, self.f, self.r, self.b, self.d])]
@@ -112,7 +112,7 @@ class Cubik:
         r9 = left_pad + d_v[2] + right_pad
         
         combined = '\n'.join((r1, r2, r3, r4, r5, r6, r7, r8, r9))
-        print(combined)
+        return combined
 
 
 def permute(cubik, seq, reverse=False):
@@ -129,13 +129,30 @@ def apply_permutations(cubik, permutations, reverse=False):
     for permutation in permutations:
         permute(cubik, permutation, reverse=reverse)
 
+def apply_moves(cubik, moves, reverse=False):
+    for move in moves:
+        apply_permutations(cubik, move, reverse=reverse)
 
 if __name__ == '__main__':
     cubik = Cubik()
     seq = ['FTL', 'FTR', 'FDR', 'FDL']
-    front_permutations = [('FTL', 'FTR', 'FDR', 'FDL'), ('FTC', 'FCR', 'FDC', 'FCL'), ('UDL', 'RTL', 'DTR', 'LDR'), ('UDC', 'RCL', 'DTC', 'LCR'), ('UDR', 'RDL', 'DTL', 'LTR')]
+    up = [('UTL', 'UTR', 'UDR', 'UDL'), ('UTC', 'UCR', 'UDC', 'UCL'), ('LTL', 'BDR', 'RTL', 'FTL'), ('LTC', 'BDC', 'RTC', 'FTC'), ('LTR', 'BDL', 'RTR', 'FTR')]
+    left = [('LTL', 'LTR', 'LDR', 'LDL'), ('LTC', 'LCR', 'LDC', 'LCL'),  ('UTL', 'FTL', 'DTL', 'BTL'), ('UCL', 'FCL', 'DCL', 'BCL'), ('UDL', 'FDL', 'DDL', 'BDL')]
+    front = [('FTL', 'FTR', 'FDR', 'FDL'), ('FTC', 'FCR', 'FDC', 'FCL'), ('UDL', 'RTL', 'DTR', 'LDR'), ('UDC', 'RCL', 'DTC', 'LCR'), ('UDR', 'RDL', 'DTL', 'LTR')]
+    right = [('RTL', 'RTR', 'RDR', 'RDL'), ('RTC', 'RCR', 'RDC', 'RCL'), ('UTR', 'BTR', 'DTR', 'FTR'), ('UCR', 'BCR', 'DCR', 'FCR'), ('UDR', 'BDR', 'DDR', 'FDR')]
+    down = [('DTL', 'DTR', 'DDR', 'DDL'), ('DTC', 'DCR', 'DDC', 'DCL'), ('LDL', 'FDL', 'RDL', 'BDR'), ('LDC', 'FDC', 'RDC', 'BTC'), ('LDR', 'FDR', 'RDR', 'BTL')]
+    bottom = [('BTL', 'BTR', 'BDR', 'BDL'), ('BTC', 'BCR', 'BDC', 'BCL'), ('UTL', 'LDL', 'DDR', 'RTR'), ('UTC', 'LCL', 'DDC', 'RCR'), ('LTL', 'DDL', 'RDR', 'UTR')]
 
-    apply_permutations(cubik, front_permutations, reverse=True)
+    apply_moves(cubik, (up, left, front, right, down, bottom))
+    print(cubik.repr(color=True))
+    apply_moves(cubik, (bottom, down, right, front, left, up), reverse=True)
+
+
+
+    # apply_permutations(cubik, front_permutations, reverse=True)
+    # apply_permutations(cubik, up_permutations, reverse=True)
+    # apply_permutations(cubik, up_permutations, reverse=True)
+    # apply_permutations(cubik, up_permutations)
 
     # print(vals)
     # permute(cubik, seq)
