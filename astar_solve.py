@@ -47,14 +47,14 @@ if __name__ == '__main__':
 
     solution = cubik.copy()
 
-    cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
+    cubik.apply_moves(cubik.parse_moves("R D"))
 
-    print(cubik.repr(color=True))
-    print(h_mismatch(cubik, solution))
-    print(h_manhattan(cubik, solution))
-    print(h_euclidean(cubik, solution))
+    # print(cubik.repr(color=True))
+    # print(h_mismatch(cubik, solution))
+    # print(h_manhattan(cubik, solution))
+    # print(h_euclidean(cubik, solution))
 
-    h = h_manhattan
+    h = h_euclidean
     cubik.heur = h(cubik, solution)
     closed = set()
     opened = PriorityQueue()
@@ -69,9 +69,9 @@ if __name__ == '__main__':
     time_end = None if max_time is None else time_start + max_time
     iter = 0
     max_iter = float('inf')
-    g_coef = .4
+    g_coef = 400
     verbose = True
-    verbose_step = 1
+    verbose_step = 20
     while True:
         if success:
             break
@@ -83,11 +83,12 @@ if __name__ == '__main__':
             break
         e = opened.pop()
         closed.add(e)
-        if e.is_solved():
+        if e == solution:
             success = True
         else:
             for move in solution.move_map.keys():
                 candidate = e.copy()
+                hash_before = candidate.hash
                 candidate.apply_moves([move])
                 candidate.heur = h(candidate, solution)
                 candidate.came_from = e.came_from + [move]
@@ -98,3 +99,7 @@ if __name__ == '__main__':
         iter += 1
         if verbose and iter % verbose_step == 0:
             print(f"[{iter}]: n_opened = {len(opened)} | n_closed = {len(closed)} | cur_depth: {e.g} | top-5 heur: {', '.join(str(round(_, 1)) for _ in opened.k[:5])}")
+    
+    state_path = []
+    if success:
+        print(' '.join(e.came_from))

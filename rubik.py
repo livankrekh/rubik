@@ -74,7 +74,7 @@ class Face:
     def copy(self):
         f = Face(self.name, self.values)
         f.ve = [c.copy() for c in self.ve]
-        vals = self.ve[:4] + [self.name] + self.ve[4:]
+        vals = f.ve[:4] + [self.name] + f.ve[4:]
         f.arr = np.array(vals).reshape((3, 3))
         return f
 
@@ -105,7 +105,11 @@ class Cubik:
         self.faces = [Face(name, values) for name, values in zip('ULFRBD', [self.u, self.l, self.f, self.r, self.b, self.d])]
         self.face_map = {name: self.faces[i] for i, name in enumerate('ULFRBD')}
         self.came_from = []
+        r = self.repr()
+        self.hash = hash(r)
 
+    def _rehash(self):
+        self.hash = hash(self.repr())
 
     def accessor(self, seq):
         face_name, *cubit_name = seq
@@ -144,6 +148,7 @@ class Cubik:
     def copy(self):
         c = Cubik()
         c.faces = [face.copy() for face in self.faces]
+        c.face_map = {name: c.faces[i] for i, name in enumerate('ULFRBD')}
         c.came_from = self.came_from[:]
         return c
     
@@ -164,6 +169,7 @@ class Cubik:
     def apply_moves(self, moves):
         for move in moves:
             self.apply_permutations(self.move_map[move])
+        self._rehash()
 
     @staticmethod
     def valid_moves(moves):
@@ -198,43 +204,21 @@ class Cubik:
     def is_solved(self):
         return all(all(v.col == face.col for v in face.ve) for face in self.faces)
 
+    def __eq__(self, o):
+        return self.hash == o.hash
+    
+    def __hash__(self):
+        return int(self.hash)
+
 if __name__ == '__main__':
     cubik = Cubik()
-    # print(cubik.move_map["U'"])
-    # cp = cubik.copy()
-    # cubik.apply_moves('ULFRDB')
-    print(cubik.is_solved())
-    cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
-    print(cubik.is_solved())
-    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
-    # cubik.apply_moves('BDRFLU')
-    # cubik.apply_moves('BDRFLU')
-
-    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
-    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
-    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
-    # cubik.apply_moves('ULFRDB')
-    # cubik.apply_moves('ULFRDB')
-    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
-    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
-
-    # apply_moves(cubik, (up, left, front, right, down, bottom))
-    # print(cubik.repr(color=True))
-    # apply_moves(cubik, (bottom, down, right, front, left, up), reverse=True)
-    # print(cp.repr(color=True))
 
 
-    # apply_permutations(cubik, front_permutations, reverse=True)
-    # apply_permutations(cubik, up_permutations, reverse=True)
-    # apply_permutations(cubik, up_permutations, reverse=True)
-    # apply_permutations(cubik, up_permutations)
-    print(cubik.repr(color=True))
-    # print(vals)
-    # permute(cubik, seq)
-    # print(cubik.repr(color=True))
-    # print(cubik)
-    # u = Face('U', [1, 2, 3, 4, 5, 6, 7, 8])
-    # l = Face('L', [9, 10, 11, 18, 19, 24, 25, 26])
-
-    # permute(u, l, ['UTL', 'UTR', 'UDR', 'UDL'])
-    # print(a)
+    print(cubik.is_solved(), cubik.hash)
+    
+    cubik.apply_moves(['R'])
+    print(cubik.is_solved(), cubik.hash)
+    cubik.apply_moves(["R'"])
+    print(cubik.is_solved(), cubik.hash)
+    # cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
+    # print(cubik.is_solved(), cubik.hash)
