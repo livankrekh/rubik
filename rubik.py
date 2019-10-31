@@ -104,6 +104,8 @@ class Cubik:
     def __init__(self):
         self.faces = [Face(name, values) for name, values in zip('ULFRBD', [self.u, self.l, self.f, self.r, self.b, self.d])]
         self.face_map = {name: self.faces[i] for i, name in enumerate('ULFRBD')}
+        self.came_from = []
+
 
     def accessor(self, seq):
         face_name, *cubit_name = seq
@@ -142,6 +144,7 @@ class Cubik:
     def copy(self):
         c = Cubik()
         c.faces = [face.copy() for face in self.faces]
+        c.came_from = self.came_from[:]
         return c
     
     def permute(self, seq, reverse=False):
