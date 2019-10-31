@@ -86,6 +86,21 @@ class Cubik:
     d = [33, 34, 35, 36, 37, 38, 39, 40]
     b = [41, 42, 43, 44, 45, 46, 47, 48]
 
+    up = [('UTL', 'UTR', 'UDR', 'UDL'), ('UTC', 'UCR', 'UDC', 'UCL'), ('LTL', 'BDR', 'RTL', 'FTL'), ('LTC', 'BDC', 'RTC', 'FTC'), ('LTR', 'BDL', 'RTR', 'FTR')]
+    left = [('LTL', 'LTR', 'LDR', 'LDL'), ('LTC', 'LCR', 'LDC', 'LCL'),  ('UTL', 'FTL', 'DTL', 'BTL'), ('UCL', 'FCL', 'DCL', 'BCL'), ('UDL', 'FDL', 'DDL', 'BDL')]
+    front = [('FTL', 'FTR', 'FDR', 'FDL'), ('FTC', 'FCR', 'FDC', 'FCL'), ('UDL', 'RTL', 'DTR', 'LDR'), ('UDC', 'RCL', 'DTC', 'LCR'), ('UDR', 'RDL', 'DTL', 'LTR')]
+    right = [('RTL', 'RTR', 'RDR', 'RDL'), ('RTC', 'RCR', 'RDC', 'RCL'), ('UTR', 'BTR', 'DTR', 'FTR'), ('UCR', 'BCR', 'DCR', 'FCR'), ('UDR', 'BDR', 'DDR', 'FDR')]
+    down = [('DTL', 'DTR', 'DDR', 'DDL'), ('DTC', 'DCR', 'DDC', 'DCL'), ('LDL', 'FDL', 'RDL', 'BDR'), ('LDC', 'FDC', 'RDC', 'BTC'), ('LDR', 'FDR', 'RDR', 'BTL')]
+    bottom = [('BTL', 'BTR', 'BDR', 'BDL'), ('BTC', 'BCR', 'BDC', 'BCL'), ('UTL', 'LDL', 'DDR', 'RTR'), ('UTC', 'LCL', 'DDC', 'RCR'), ('LTL', 'DDL', 'RDR', 'UTR')]
+
+    move_map = {'U': up, 'L': left, 'F': front, 'R': right, 'D': down, 'B': bottom,
+                "U'": tuple(tuple(reversed(c)) for c in reversed(up)),
+                "L'": tuple(tuple(reversed(c)) for c in reversed(left)),
+                "F'": tuple(tuple(reversed(c)) for c in reversed(front)),
+                "R'": tuple(tuple(reversed(c)) for c in reversed(right)),
+                "D'": tuple(tuple(reversed(c)) for c in reversed(down)),
+                "B'": tuple(tuple(reversed(c)) for c in reversed(bottom))}
+
     def __init__(self):
         self.faces = [Face(name, values) for name, values in zip('ULFRBD', [self.u, self.l, self.f, self.r, self.b, self.d])]
         self.face_map = {name: self.faces[i] for i, name in enumerate('ULFRBD')}
@@ -128,48 +143,85 @@ class Cubik:
         c = Cubik()
         c.faces = [face.copy() for face in self.faces]
         return c
+    
+    def permute(self, seq, reverse=False):
+        vals = [self.accessor(_) for _ in seq]
+        if reverse:
+            vals = list(reversed(vals))
+        last_value = vals[-1].v
+        for i in range(len(vals) - 1, 0, -1):
+            cur, prev = vals[i], vals[i - 1]
+            cur.v = prev.v
+        vals[0].v = last_value
+    
+    def apply_permutations(self, permutations, reverse=False):
+        for permutation in permutations:
+            self.permute(permutation, reverse=reverse)
 
+    def apply_moves(self, moves):
+        for move in moves:
+            self.apply_permutations(self.move_map[move])
 
-def permute(cubik, seq, reverse=False):
-    vals = [cubik.accessor(_) for _ in seq]
-    if reverse:
-        vals = list(reversed(vals))
-    last_value = vals[-1].v
-    for i in range(len(vals) - 1, 0, -1):
-        cur, prev = vals[i], vals[i - 1]
-        cur.v = prev.v
-    vals[0].v = last_value
+    @staticmethod
+    def valid_moves(moves):
 
-def apply_permutations(cubik, permutations, reverse=False):
-    for permutation in permutations:
-        permute(cubik, permutation, reverse=reverse)
-
-def apply_moves(cubik, moves, reverse=False):
-    for move in moves:
-        apply_permutations(cubik, move, reverse=reverse)
+        return all(c in "RDFLUB2' " for c in list(moves))
+    
+    @classmethod
+    def parse_moves(cls, moves):
+        """ Convert string of moves into list of (move, reverse) """
+        if not cls.valid_moves(moves):
+            raise ValueError(f"Invalid moves string:", moves)
+        moves = [c for c in moves.split(" ") if c]
+        expand_moves = []
+        for move in moves:
+            if len(move) == 1:
+                if move in cls.move_map:
+                    expand_moves.append(move)
+            elif len(move) == 2:
+                letter, modifier = move
+                if letter not in cls.move_map:
+                    raise ValueError("Invalid move:", move)
+                if modifier == '2':
+                    expand_moves.append(letter)
+                    expand_moves.append(letter)
+                elif modifier == "'":
+                    expand_moves.append(move)
+                else:
+                    raise ValueError("Invalid move (modifier):", move)
+            else:
+                raise ValueError("Invalid move:", move)
+        return expand_moves
 
 if __name__ == '__main__':
     cubik = Cubik()
-    seq = ['FTL', 'FTR', 'FDR', 'FDL']
-    up = [('UTL', 'UTR', 'UDR', 'UDL'), ('UTC', 'UCR', 'UDC', 'UCL'), ('LTL', 'BDR', 'RTL', 'FTL'), ('LTC', 'BDC', 'RTC', 'FTC'), ('LTR', 'BDL', 'RTR', 'FTR')]
-    left = [('LTL', 'LTR', 'LDR', 'LDL'), ('LTC', 'LCR', 'LDC', 'LCL'),  ('UTL', 'FTL', 'DTL', 'BTL'), ('UCL', 'FCL', 'DCL', 'BCL'), ('UDL', 'FDL', 'DDL', 'BDL')]
-    front = [('FTL', 'FTR', 'FDR', 'FDL'), ('FTC', 'FCR', 'FDC', 'FCL'), ('UDL', 'RTL', 'DTR', 'LDR'), ('UDC', 'RCL', 'DTC', 'LCR'), ('UDR', 'RDL', 'DTL', 'LTR')]
-    right = [('RTL', 'RTR', 'RDR', 'RDL'), ('RTC', 'RCR', 'RDC', 'RCL'), ('UTR', 'BTR', 'DTR', 'FTR'), ('UCR', 'BCR', 'DCR', 'FCR'), ('UDR', 'BDR', 'DDR', 'FDR')]
-    down = [('DTL', 'DTR', 'DDR', 'DDL'), ('DTC', 'DCR', 'DDC', 'DCL'), ('LDL', 'FDL', 'RDL', 'BDR'), ('LDC', 'FDC', 'RDC', 'BTC'), ('LDR', 'FDR', 'RDR', 'BTL')]
-    bottom = [('BTL', 'BTR', 'BDR', 'BDL'), ('BTC', 'BCR', 'BDC', 'BCL'), ('UTL', 'LDL', 'DDR', 'RTR'), ('UTC', 'LCL', 'DDC', 'RCR'), ('LTL', 'DDL', 'RDR', 'UTR')]
+    # print(cubik.move_map["U'"])
+    # cp = cubik.copy()
+    # cubik.apply_moves('ULFRDB')
+    # cubik.apply_moves(cubik.parse_moves("B' D' R' F' L' U' "))
+    cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+    cubik.apply_moves('BDRFLU')
+    cubik.apply_moves('BDRFLU')
 
-    cp = cubik.copy()
+    cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+    # cubik.apply_moves('ULFRDB')
+    # cubik.apply_moves('ULFRDB')
+    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+
     # apply_moves(cubik, (up, left, front, right, down, bottom))
     # print(cubik.repr(color=True))
-    apply_moves(cubik, (bottom, down, right, front, left, up), reverse=True)
-    print(cp.repr(color=True))
+    # apply_moves(cubik, (bottom, down, right, front, left, up), reverse=True)
+    # print(cp.repr(color=True))
 
 
     # apply_permutations(cubik, front_permutations, reverse=True)
     # apply_permutations(cubik, up_permutations, reverse=True)
     # apply_permutations(cubik, up_permutations, reverse=True)
     # apply_permutations(cubik, up_permutations)
-
+    print(cubik.repr(color=True))
     # print(vals)
     # permute(cubik, seq)
     # print(cubik.repr(color=True))
