@@ -35,7 +35,7 @@ class Face:
         self.ve = [Cubit(v) for v in values]
         vals = self.ve[:4] + [name] + self.ve[4:]
         self.arr = np.array(vals).reshape((3, 3))
-        
+        self.col = self.cmap_name[name]
         self.center = lambda x: str(x).center(2)
 
     def __repr__(self):
@@ -76,7 +76,7 @@ class Face:
         f.ve = [c.copy() for c in self.ve]
         vals = self.ve[:4] + [self.name] + self.ve[4:]
         f.arr = np.array(vals).reshape((3, 3))
-
+        return f
 
 class Cubik:
     u = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -164,7 +164,6 @@ class Cubik:
 
     @staticmethod
     def valid_moves(moves):
-
         return all(c in "RDFLUB2' " for c in list(moves))
     
     @classmethod
@@ -193,17 +192,22 @@ class Cubik:
                 raise ValueError("Invalid move:", move)
         return expand_moves
 
+    def is_solved(self):
+        return all(all(v.col == face.col for v in face.ve) for face in self.faces)
+
 if __name__ == '__main__':
     cubik = Cubik()
     # print(cubik.move_map["U'"])
     # cp = cubik.copy()
     # cubik.apply_moves('ULFRDB')
-    # cubik.apply_moves(cubik.parse_moves("B' D' R' F' L' U' "))
-    cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
-    cubik.apply_moves('BDRFLU')
-    cubik.apply_moves('BDRFLU')
+    print(cubik.is_solved())
+    cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
+    print(cubik.is_solved())
+    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+    # cubik.apply_moves('BDRFLU')
+    # cubik.apply_moves('BDRFLU')
 
-    cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
+    # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
     # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
     # cubik.apply_moves(["U'", "L'", "F'", "R'", "D'", "B'"])
     # cubik.apply_moves('ULFRDB')
