@@ -20,6 +20,9 @@ class Cubit:
     @property
     def col(self):
         return self.cmap.get(self.v, self.v)
+    
+    def copy(self):
+        return Cubit(self.v)
 
 class Face:
     row_map = {'T': 0, 'C': 1, 'D': 2}
@@ -67,6 +70,13 @@ class Face:
             return '\n'.join((r1, r2, r3))
         else:
             return r1, r2, r3
+    
+    def copy(self):
+        f = Face(self.name, self.values)
+        f.ve = [c.copy() for c in self.ve]
+        vals = self.ve[:4] + [self.name] + self.ve[4:]
+        f.arr = np.array(vals).reshape((3, 3))
+
 
 class Cubik:
     u = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -113,6 +123,11 @@ class Cubik:
         
         combined = '\n'.join((r1, r2, r3, r4, r5, r6, r7, r8, r9))
         return combined
+    
+    def copy(self):
+        c = Cubik()
+        c.faces = [face.copy() for face in self.faces]
+        return c
 
 
 def permute(cubik, seq, reverse=False):
@@ -143,10 +158,11 @@ if __name__ == '__main__':
     down = [('DTL', 'DTR', 'DDR', 'DDL'), ('DTC', 'DCR', 'DDC', 'DCL'), ('LDL', 'FDL', 'RDL', 'BDR'), ('LDC', 'FDC', 'RDC', 'BTC'), ('LDR', 'FDR', 'RDR', 'BTL')]
     bottom = [('BTL', 'BTR', 'BDR', 'BDL'), ('BTC', 'BCR', 'BDC', 'BCL'), ('UTL', 'LDL', 'DDR', 'RTR'), ('UTC', 'LCL', 'DDC', 'RCR'), ('LTL', 'DDL', 'RDR', 'UTR')]
 
-    apply_moves(cubik, (up, left, front, right, down, bottom))
-    print(cubik.repr(color=True))
+    cp = cubik.copy()
+    # apply_moves(cubik, (up, left, front, right, down, bottom))
+    # print(cubik.repr(color=True))
     apply_moves(cubik, (bottom, down, right, front, left, up), reverse=True)
-
+    print(cp.repr(color=True))
 
 
     # apply_permutations(cubik, front_permutations, reverse=True)
@@ -156,7 +172,7 @@ if __name__ == '__main__':
 
     # print(vals)
     # permute(cubik, seq)
-    print(cubik.repr(color=True))
+    # print(cubik.repr(color=True))
     # print(cubik)
     # u = Face('U', [1, 2, 3, 4, 5, 6, 7, 8])
     # l = Face('L', [9, 10, 11, 18, 19, 24, 25, 26])
