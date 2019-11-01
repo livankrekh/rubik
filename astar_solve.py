@@ -20,31 +20,33 @@ class PriorityQueue(list):
     def __len__(self):
         return len(self.v)
 
-def h_mismatch(candidate, solution):
+def h_mismatch(candidate, solution, mask=None):
     cnt = 0
     for f_cand, f_sol in zip(candidate.faces, solution.faces):
-        # print(f_cand, f_sol)
         for v_cand, v_sol in zip(f_cand.ve, f_sol.ve):
-            cnt += v_cand.v != v_sol.v
+            if mask is None or (v_sol.v in mask):
+                cnt += v_cand.v != v_sol.v
     return cnt
 
-def h_manhattan(candidate, solution):
+def h_manhattan(candidate, solution, mask=None):
     accum = 0
     for f_cand, f_sol in zip(candidate.faces, solution.faces):
         for v_cand, v_sol in zip(f_cand.ve, f_sol.ve):
-            accum += abs(v_cand.v - v_sol.v)
+            if mask is None or (v_sol.v in mask):
+                accum += abs(v_cand.v - v_sol.v)
     return accum
 
-def h_euclidean(candidate, solution):
+def h_euclidean(candidate, solution, mask=None):
     accum = 0
     for f_cand, f_sol in zip(candidate.faces, solution.faces):
         for v_cand, v_sol in zip(f_cand.ve, f_sol.ve):
-            accum += (v_cand.v - v_sol.v) ** 2
+            if mask is None or (v_sol.v in mask):
+                accum += (v_cand.v - v_sol.v) ** 2
     return accum
 
-def astar_solve(cubik, target, max_iter=float('inf'), max_time=None, g_coef=.4, heuristic=h_manhattan, verbose=False, verbose_step=20):
+def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, g_coef=400, heuristic=h_manhattan, verbose=False, verbose_step=20, debug=False):
     # cubik = cubik.copy()  # Don't work properly if uncommented
-    cubik.heur = heuristic(cubik, target)
+    cubik.heur = heuristic(cubik, target, mask)
 
     closed = set()
     opened = PriorityQueue()
@@ -68,15 +70,21 @@ def astar_solve(cubik, target, max_iter=float('inf'), max_time=None, g_coef=.4, 
             fail_reason = 'max time exceeded'
             break
         e = opened.pop()
+        if debug:
+            print("E.heur:", e.heur)
+            print(e.repr())
         closed.add(e)
-        if e == target:
+        if e == target or e.heur == 0:
             success = True
         else:
             for move in target.move_map.keys():
                 candidate = e.copy()
                 hash_before = candidate.hash
                 candidate.apply_moves([move])
-                candidate.heur = heuristic(candidate, target)
+                candidate.heur = heuristic(candidate, target, mask)
+                if debug:
+                    print("CANDIDATE HEUR:", candidate.heur)
+                    print(candidate.repr())
                 candidate.came_from = e.came_from + [move]
                 candidate.g = e.g + 1
 
@@ -90,12 +98,13 @@ def astar_solve(cubik, target, max_iter=float('inf'), max_time=None, g_coef=.4, 
 
 if __name__ == '__main__':
     cubik = Cubik()
-
+    print("TARGET:")
+    print(cubik.repr())
     solution = cubik.copy()
 
-    cubik.apply_moves(cubik.parse_moves("R D"))
-
-    success, result_state, path = astar_solve(cubik, solution, verbose=True)
+    cubik.apply_moves(cubik.parse_moves("F D D B L'"))
+    print(cubik.repr())
+    success, result_state, path = astar_solve(cubik, solution, mask=[2, 4, 5, 7], verbose=True)
     print('SUCCESS:', success)
-    # print(result_state.repr())
+    print(result_state.repr())
     print("Path:", path)
