@@ -44,7 +44,7 @@ def h_euclidean(candidate, solution, mask=None):
                 accum += (v_cand.v - v_sol.v) ** 2
     return accum
 
-def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, g_coef=4000, heuristic=h_manhattan, verbose=False, verbose_step=20, debug=False):
+def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, g_coef=4, heuristic=h_manhattan, verbose=False, verbose_step=20, debug=False):
     # cubik = cubik.copy()  # Don't work properly if uncommented
     cubik.heur = heuristic(cubik, target, mask)
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     print("")
     print(cubik.repr())
     print("PHASE 1:")
-    success, result_state, path = astar_solve(cubik, solution, mask=[2, 4, 5, 7], verbose=True, max_time=5)
+    success, result_state, path = astar_solve(cubik, solution, mask=[2, 4, 5, 7], verbose=True, max_time=30)
     print('SUCCESS:', success)
     print(result_state.repr())
     print("Path:", path)
