@@ -44,7 +44,7 @@ def h_euclidean(candidate, solution, mask=None):
                 accum += (v_cand.v - v_sol.v) ** 2
     return accum
 
-def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, g_coef=400, heuristic=h_manhattan, verbose=False, verbose_step=20, debug=False):
+def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, g_coef=4000, heuristic=h_manhattan, verbose=False, verbose_step=20, debug=False):
     # cubik = cubik.copy()  # Don't work properly if uncommented
     cubik.heur = heuristic(cubik, target, mask)
 
@@ -56,8 +56,8 @@ def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, 
     search_path = []
     success = False
 
-    max_time = None
     time_start = time.time()
+
     time_end = None if max_time is None else time_start + max_time
     iter = 0
     while True:
@@ -66,7 +66,7 @@ def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, 
         if len(opened) == 0 or iter >= max_iter:
             fail_reason = 'max iter exceeded'
             break
-        if iter % 1000 == 0 and max_time and time.time() >= time_end:
+        if iter % 100 == 0 and max_time and time.time() >= time_end:
             fail_reason = 'max time exceeded'
             break
         e = opened.pop()
@@ -102,9 +102,23 @@ if __name__ == '__main__':
     print(cubik.repr())
     solution = cubik.copy()
 
-    cubik.apply_moves(cubik.parse_moves("F D D B L'"))
+    cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
+    print("")
     print(cubik.repr())
-    success, result_state, path = astar_solve(cubik, solution, mask=[2, 4, 5, 7], verbose=True)
+    print("PHASE 1:")
+    success, result_state, path = astar_solve(cubik, solution, mask=[2, 4, 5, 7], verbose=True, max_time=5)
     print('SUCCESS:', success)
     print(result_state.repr())
     print("Path:", path)
+    # print("PHASE 2:")
+    # success, result_state2, path2 = astar_solve(result_state, solution, mask=[1, 2, 3, 4, 5, 6, 7, 8] + [9, 10, 11, 12, 13, 14, 15, 16, 17, 41, 42, 43], verbose=True)
+    # print('SUCCESS:', success)
+    # print(result_state2.repr())
+    # print("Path:", path2)
+
+    # success, result_state3, path3 = astar_solve(result_state2, solution, mask=[1, 2, 3, 4, 5, 6, 7, 8] + [9, 10, 11, 12, 13, 14, 15, 16, 17, 41, 42, 43] + [18, 19, 20, 21, 22, 23, 44, 45], verbose=True)
+    # print('SUCCESS:', success)
+    # print(result_state3.repr())
+    # print("Path:", path3)
+
+    # print("COMBINED PATH:", path3)
