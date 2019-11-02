@@ -99,7 +99,9 @@ class Cubik:
                 "F'": tuple(tuple(reversed(c)) for c in reversed(front)),
                 "R'": tuple(tuple(reversed(c)) for c in reversed(right)),
                 "D'": tuple(tuple(reversed(c)) for c in reversed(down)),
-                "B'": tuple(tuple(reversed(c)) for c in reversed(bottom))}
+                "B'": tuple(tuple(reversed(c)) for c in reversed(bottom)),
+                "U2": up + up, "L2": left + left, "F2": front + front,
+                "R2": right + right, "D2": down + down, "B2": bottom + bottom}
 
     def __init__(self):
         self.faces = [Face(name, values) for name, values in zip('ULFRBD', [self.u, self.l, self.f, self.r, self.b, self.d])]

@@ -44,6 +44,9 @@ def h_euclidean(candidate, solution, mask=None):
                 accum += (v_cand.v - v_sol.v) ** 2
     return accum
 
+def h_null(candidate, solution, mask=None):
+    return 0
+
 def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, g_coef=4, heuristic=h_manhattan, verbose=False, verbose_step=20, debug=False):
     # cubik = cubik.copy()  # Don't work properly if uncommented
     cubik.heur = heuristic(cubik, target, mask)
@@ -78,6 +81,8 @@ def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, 
             success = True
         else:
             for move in target.move_map.keys():
+                if len(e.came_from) and move == e.came_from[-1]:
+                    continue
                 candidate = e.copy()
                 hash_before = candidate.hash
                 candidate.apply_moves([move])
@@ -92,7 +97,7 @@ def astar_solve(cubik, target, mask=None, max_iter=float('inf'), max_time=None, 
                     opened.add(candidate.g * g_coef + candidate.heur, candidate)
         iter += 1
         if verbose and iter % verbose_step == 0:
-            print(f"[{iter}]: n_opened = {len(opened)} | n_closed = {len(closed)} | cur_depth: {e.g} | top-5 heur: {', '.join(str(round(_, 1)) for _ in opened.k[:5])}")
+            print(f"[{iter}]: n_opened = {len(opened)} | n_closed = {len(closed)} | cur_depth: {e.g} | top-5 heur: {', '.join(str(round(_.heur, 1)) for _ in opened.v[:5])}")
     
     return success, e, e.came_from[:]
 
@@ -106,19 +111,19 @@ if __name__ == '__main__':
     print("")
     print(cubik.repr())
     print("PHASE 1:")
-    success, result_state, path = astar_solve(cubik, solution, mask=[2, 4, 5, 7], verbose=True, max_time=30)
+    success, result_state, path = astar_solve(cubik, solution, mask=[2, 4, 5, 7], verbose=True, g_coef=20, heuristic=h_manhattan)
     print('SUCCESS:', success)
     print(result_state.repr())
     print("Path:", path)
-    # print("PHASE 2:")
-    # success, result_state2, path2 = astar_solve(result_state, solution, mask=[1, 2, 3, 4, 5, 6, 7, 8] + [9, 10, 11, 12, 13, 14, 15, 16, 17, 41, 42, 43], verbose=True)
-    # print('SUCCESS:', success)
-    # print(result_state2.repr())
-    # print("Path:", path2)
+    print("PHASE 2:")
+    success, result_state2, path2 = astar_solve(result_state, solution, mask=[1, 2, 3, 4, 5, 6, 7, 8] + [9, 10, 11, 12, 13, 14, 15, 16, 17, 41, 42, 43], verbose=True, g_coef=20, heuristic=h_manhattan)
+    print('SUCCESS:', success)
+    print(result_state2.repr())
+    print("Path:", path2)
 
-    # success, result_state3, path3 = astar_solve(result_state2, solution, mask=[1, 2, 3, 4, 5, 6, 7, 8] + [9, 10, 11, 12, 13, 14, 15, 16, 17, 41, 42, 43] + [18, 19, 20, 21, 22, 23, 44, 45], verbose=True)
-    # print('SUCCESS:', success)
-    # print(result_state3.repr())
-    # print("Path:", path3)
+    success, result_state3, path3 = astar_solve(result_state2, solution, mask=[1, 2, 3, 4, 5, 6, 7, 8] + [9, 10, 11, 12, 13, 14, 15, 16, 17, 41, 42, 43] + [18, 19, 20, 21, 22, 23, 44, 45], verbose=True, g_coef=20, heuristic=h_manhattan)
+    print('SUCCESS:', success)
+    print(result_state3.repr())
+    print("Path:", path3)
 
-    # print("COMBINED PATH:", path3)
+    print("COMBINED PATH:", path3)
