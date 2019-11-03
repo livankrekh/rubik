@@ -1,5 +1,8 @@
 import numpy as np
 import sys
+import itertools
+import pandas as pd
+
 
 class Cubit:
     u_colors = {v: 'W' for v in [1, 2, 3, 4, 5, 6, 7, 8]}
@@ -93,15 +96,22 @@ class Cubik:
     down = [('DTL', 'DTR', 'DDR', 'DDL'), ('DTC', 'DCR', 'DDC', 'DCL'), ('LDL', 'FDL', 'RDL', 'BDR'), ('LDC', 'FDC', 'RDC', 'BTC'), ('LDR', 'FDR', 'RDR', 'BTL')]
     bottom = [('BTL', 'BTR', 'BDR', 'BDL'), ('BTC', 'BCR', 'BDC', 'BCL'), ('UTL', 'LDL', 'DDR', 'RTR'), ('UTC', 'LCL', 'DDC', 'RCR'), ('LTL', 'DDL', 'RDR', 'UTR')]
 
+    corners = [1,3,6,8,9,11,24,26,12,14,27,29,15,17,30,32,41,43,46,48,33,35,38,40]
+    sides = [2,4,5,7,10,18,19,25,13,20,21,28,16,22,23,31,42,44,45,47,34,36,37,39]
+
+    corner_db = pd.read_csv("./corner_db_filtered.csv")
+    side_db = pd.read_csv("./side_db_filtered.csv")
+    corner_db.columns = ['index', 'side', 'position', 'grade']
+    side_db.columns = ['index', 'side', 'position', 'grade']
+    all_db = pd.concat([corner_db, side_db], ignore_index=True)
+
     move_map = {'U': up, 'L': left, 'F': front, 'R': right, 'D': down, 'B': bottom,
                 "U'": tuple(tuple(reversed(c)) for c in reversed(up)),
                 "L'": tuple(tuple(reversed(c)) for c in reversed(left)),
                 "F'": tuple(tuple(reversed(c)) for c in reversed(front)),
                 "R'": tuple(tuple(reversed(c)) for c in reversed(right)),
                 "D'": tuple(tuple(reversed(c)) for c in reversed(down)),
-                "B'": tuple(tuple(reversed(c)) for c in reversed(bottom)),
-                "U2": up + up, "L2": left + left, "F2": front + front,
-                "R2": right + right, "D2": down + down, "B2": bottom + bottom}
+                "B'": tuple(tuple(reversed(c)) for c in reversed(bottom))}
 
     def __init__(self):
         self.faces = [Face(name, values) for name, values in zip('ULFRBD', [self.u, self.l, self.f, self.r, self.b, self.d])]
@@ -203,6 +213,71 @@ class Cubik:
                 raise ValueError("Invalid move:", move)
         return expand_moves
 
+    def get_new_pos(self, i):
+        line = list(itertools.chain(*[face.ve for face in self.faces]))
+        target_line = list(itertools.chain(*[face.ve for face in Cubik().faces]))
+
+        line = [c.v for c in line]
+        target_line = [c.v for c in target_line]
+
+        index = line.index(i)
+
+        return target_line[index]
+
+    def manh_distance_corner(self, actions=[]):
+        curr_cubik = self.copy()
+        curr_cubik.apply_moves(actions)
+        res = 0
+
+        for corner in curr_cubik.corners:
+            new_corner_pos = curr_cubik.get_new_pos(corner)
+
+            if (new_corner_pos == corner):
+                continue
+
+            curr_dist = curr_cubik.corner_db[(curr_cubik.corner_db["side"] == corner) &
+                                       (curr_cubik.corner_db["position"] == new_corner_pos)]['grade'].min()
+
+            res += curr_dist
+
+        return res
+
+    def manh_distance_side(self, actions=[]):
+        curr_cubik = self.copy()
+        curr_cubik.apply_moves(actions)
+        res = 0
+
+        for side in curr_cubik.sides:
+            new_side_pos = curr_cubik.get_new_pos(side)
+
+            if (new_side_pos == side):
+                continue
+
+            curr_dist = curr_cubik.side_db[(curr_cubik.side_db["side"] == side) &
+                                       (curr_cubik.side_db["position"] == new_side_pos)]['grade'].min()
+
+            res += curr_dist
+
+        return res
+
+    def manh_distance(self, cubits, actions=[]):
+        curr_cubik = self.copy()
+        curr_cubik.apply_moves(actions)
+        res = 0
+
+        for side in cubits:
+            new_side_pos = curr_cubik.get_new_pos(side)
+
+            if (new_side_pos == side):
+                continue
+
+            curr_dist = curr_cubik.all_db[(curr_cubik.all_db["side"] == side) &
+                                       (curr_cubik.all_db["position"] == new_side_pos)]['grade'].min()
+
+            res += curr_dist
+
+        return res
+
     def is_solved(self):
         return all(all(v.col == face.col for v in face.ve) for face in self.faces)
 
@@ -212,15 +287,86 @@ class Cubik:
     def __hash__(self):
         return int(self.hash)
 
+all_actions = ["U", "R", "F", "D", "L", "B",
+               "U'", "R'", "F'", "D'", "L'", "B'"
+               # "U2", "R2", "F2", "D2", "L2", "B2"
+               ]
+
+def recurs_a_star(cubik, action, prev_dist, i):
+    if i > 20:
+        return None
+
+    new_cubik = cubik.copy()
+    new_cubik.apply_moves([action])
+    curr_dist = new_cubik.manh_distance([20,27,28,19,25,26])
+
+    if (curr_dist < 1):
+        return [action]
+
+    print("Prev dist =", prev_dist)
+    print("Curr dist =", curr_dist)
+
+    if prev_dist <= curr_dist:
+        return None
+
+    for act in all_actions:
+        if (act[-1] == "'" and action[-1] != "'" and act[0] == action[0]):
+            continue
+        if (act[-1] != "'" and action[-1] == "'" and act[0] == action[0]):
+            continue
+
+        res = recurs_a_star(new_cubik, act, curr_dist, i+1)
+
+        if (res == None):
+            pass
+        else:
+            return [action] + res
+
+    return None
+
+
 if __name__ == '__main__':
     cubik = Cubik()
 
+    print(cubik.faces)
+    cubik.apply_moves(["U", "B", "B", "R", "U'", "B'", "L", "F'"])
+    # cubik.apply_moves(["U", "B", "R"])
+    # cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
 
-    print(cubik.is_solved(), cubik.hash)
-    
-    cubik.apply_moves(['R'])
-    print(cubik.is_solved(), cubik.hash)
-    cubik.apply_moves(["R'"])
-    print(cubik.is_solved(), cubik.hash)
+    print(cubik.faces)
+
+    curr_corn_dist = cubik.manh_distance([20,27,28,19,25,26])
+    actions = []
+
+    new_cubik = cubik.copy()
+
+    for action in all_actions:
+        res = recurs_a_star(cubik, action, curr_corn_dist, 0)
+
+        print(res)
+
+        if res != None:
+            actions = res
+            break
+
+    cubik.apply_moves(actions)
+
+    print(cubik.faces)
+
+    print("Resolve =", actions)
+    print("Solved -", cubik.is_solved())
+
+    # print(cubik.manh_distance_corner(["B"]))
+    # print(cubik.manh_distance_corner(["B"]))
+    # print(cubik.manh_distance_corner(["R"]))
+    # print(cubik.manh_distance_corner(["U'"]))
+    # print(cubik.manh_distance_corner(["B'"]))
+    # print(cubik.manh_distance_corner(["L"]))
+    # print(cubik.manh_distance_corner(["L"]))
+
+    # cubik.apply_moves(['R', 'B'])
+    # print(cubik.is_solved(), cubik.hash)
+    # cubik.apply_moves(["B'","R'"])
+    # print(cubik.is_solved(), cubik.hash)
     # cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
     # print(cubik.is_solved(), cubik.hash)
