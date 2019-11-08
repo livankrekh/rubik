@@ -101,8 +101,9 @@ class Cubik:
 
     corner_db = pd.read_csv("./corner_db.csv")
     side_db = pd.read_csv("./side_db.csv")
-    corner_moves_db = pd.read_csv("./corner_moves_db.csv")
-    side_moves_db = pd.read_csv("./side_moves_db.csv")
+    d1_db = pd.read_csv("./dbs/side_d1_db.csv")
+    d2_db = pd.read_csv("./dbs/side_d2_db.csv")
+    d3_db = pd.read_csv("./dbs/side_d3_db.csv")
     corner_db.columns = ['index', 'side', 'position', 'grade']
     side_db.columns = ['index', 'side', 'position', 'grade']
     all_db = pd.concat([corner_db, side_db], ignore_index=True)
@@ -284,62 +285,24 @@ class Cubik:
 
         return res
 
-    def other_corner_distance(self, actions, prohibited_moves=[]):
+    def other_distance(self, group_db, actions=[], cubits=range(1, 49)):
         curr_cubik = self.copy()
         curr_cubik.apply_moves(actions)
         res = 0
 
-        for corner in curr_cubik.corners:
+        for corner in cubits:
             new_corner_pos = curr_cubik.get_new_pos(corner)
 
             if (new_corner_pos == corner):
                 continue
 
-            valid = False
-            tmp_db = self.corner_moves_db[(self.corner_moves_db['corner'] == corner) &
-                                          (self.corner_moves_db['position'] == new_corner_pos)]
+            tmp_db = group_db[(group_db['side'] == corner) &
+                              (group_db['position'] == new_corner_pos)]
 
-            for i, row in tmp_db.iterrows():
-                l_tmp = pd.unique(row[['first_move', 'second_move', 'third_move']].values.ravel('K'))
-                matches = [x for x in list(l_tmp) if x in prohibited_moves]
-
-                if len(matches) < 1:
-                    valid = True
-                    break
-
-            if not valid:
+            if len(tmp_db) < 1:
                 res += 1
 
         return res
-
-    def other_side_distance(self, actions, prohibited_moves=[]):
-        curr_cubik = self.copy()
-        curr_cubik.apply_moves(actions)
-        res = 0
-
-        for side in curr_cubik.sides:
-            new_side_pos = curr_cubik.get_new_pos(side)
-
-            if (new_side_pos == side):
-                continue
-
-            valid = False
-            tmp_db = self.side_moves_db[(self.side_moves_db['side'] == side) &
-                                        (self.side_moves_db['position'] == new_side_pos)]
-
-            for i, row in tmp_db.iterrows():
-                l_tmp = pd.unique(row[['first_move', 'second_move', 'third_move']].values.ravel('K'))
-                matches = [x for x in list(l_tmp) if x in prohibited_moves]
-
-                if len(matches) < 1:
-                    valid = True
-                    break
-
-            if not valid:
-                res += 1
-
-        return res
-
 
     def is_solved(self):
         return all(all(v.col == face.col for v in face.ve) for face in self.faces)
@@ -351,98 +314,102 @@ class Cubik:
         return int(self.hash)
 
 all_actions = ["U", "R", "F", "D", "L", "B",
-               "U'", "R'", "F'", "D'", "L'", "B'"
+               "U'", "R'", "F'", "D'", "L'", "B'",
                "U2", "R2", "F2", "D2", "L2", "B2"
                ]
 
-def recurs_a_star(cubik, action, prev_dist, i):
-    if i > 7:
+def recurs_a_star(cubik, action, prev_manh, i, max_dep, db, cubits):
+    if i >= max_dep:
         return None
 
     new_cubik = cubik.copy()
     new_cubik.apply_moves([action])
-    curr_dist = new_cubik.other_side_distance([], ["L", "R", "L'", "R'"])
+    curr_manh = new_cubik.other_distance(db, cubits=cubits)
 
-    if (curr_dist < 1):
+    if curr_manh == 0:
         return [action]
 
-    print("Prev dist =", prev_dist)
-    print("Curr dist =", curr_dist)
+    if curr_manh > prev_manh:
+        return None
 
-    # if prev_dist <= curr_dist:
-    #     return None
+    for act in all_actions:
+        print("___________________________")
+        res = recurs_a_star(new_cubik, act, curr_manh, i+1, max_dep, db, cubits)
 
-    current_actions = all_actions[:]
-
-    for act in current_actions:
-        if (act[-1] == "'" and action[-1] != "'" and act[0] == action[0]):
-            continue
-        if (act[-1] != "'" and action[-1] == "'" and act[0] == action[0]):
-            continue
-
-        res = recurs_a_star(new_cubik, act, curr_dist, i+1)
-
-        if (res == None):
-            pass
-        else:
-            return [action] + res
-
-    return None
-
+        if res != None:
+            return res + [action]
 
 if __name__ == '__main__':
     cubik = Cubik()
 
     print(cubik.faces)
     # cubik.apply_moves(["U2", "B2", "B", "R2", "U'", "B'", "L", "F'"])
-    # cubik.apply_moves(["U", "B", "R"])
+    # cubik.apply_moves(["U", "R"])
     cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
-
     print(cubik.faces)
 
-    # curr_corn_dist = cubik.other_corner_distance([], ["U", "D", "U'", "D'"])
     actions = []
 
-    new_cubik = cubik.copy()
-    curr_manh = new_cubik.other_side_distance([], ["L", "R", "L'", "R'"])
+    # new_cubik = cubik.copy()
+    # curr_manh = new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides)
+    # curr_manh2 = new_cubik.other_distance(new_cubik.d2_db)
+    # curr_manh3 = new_cubik.other_distance(new_cubik.d3_db)
+    # print("G1 distance =", curr_manh)
+    # print("G2 distance =", curr_manh2)
+    # print("G3 distance =", curr_manh3)
 
-    print("G0 distance =", curr_manh)
+    # for action in ["U"]:
+    #     res = recurs_a_star(cubik, action, curr_manh, 0, 3, new_cubik.d1_db, new_cubik.sides)
 
-    for action in all_actions:
-        res = recurs_a_star(cubik, action, curr_manh, 0)
-
-        print(res)
-
-        if res != None:
-            actions += res
-            break
-
-    # while curr_manh > 0:
-    #     for action in all_actions:
-    #         best_manh = curr_manh
-    #         best_action = None
-
-    #         tmp_manh = new_cubik.other_corner_distance([action], ["L", "R", "L'", "R'"])
-
-    #         if tmp_manh < best_manh:
-    #             best_manh = tmp_manh
-    #             best_action = action
-
-    #     if (best_action != None):
-    #         curr_manh = best_manh
-    #         new_cubik.apply_moves([action])
-    #         actions += [action]
-
-    #         print("Current distance =", curr_manh)
-    #     else:
-    #         print("No resolve for G0")
+    #     if res != None:
+    #         actions += res
     #         break
 
+    new_cubik = cubik.copy()
+    new_cubik.apply_moves(['U', "F'", 'L', 'R', 'D', 'U'])
+    print("distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
+
+    # new_cubik = cubik.copy()
+    # new_cubik.apply_moves(["U"])
+    # print("U distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
+    # new_cubik.apply_moves(["F'"])
+    # print("F' distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
+    # new_cubik.apply_moves(["L"])
+    # print("L distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
+    # new_cubik.apply_moves(["R"])
+    # print("R distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
+    # new_cubik.apply_moves(["D"])
+    # print("D distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
+    # new_cubik.apply_moves(["U"])
+    # print("U distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
+
+
+    # print(actions)
+
+    # new_cubik = cubik.copy()
+    # new_cubik.apply_moves(actions)
+    # curr_manh = new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.corners)
 
     # for action in all_actions:
-    #     res = recurs_a_star(cubik, action, curr_corn_dist, 0)
+    #     res = recurs_a_star(cubik, action, curr_manh, 0, 6, new_cubik.d1_db, new_cubik.corners)
 
-    #     print(res)
+    #     if res != None:
+    #         actions += res
+    #         break
+
+    # print(actions)
+
+    # new_cubik = cubik.copy()
+    # new_cubik.apply_moves(actions)
+    # curr_manh = new_cubik.other_distance(new_cubik.d2_db)
+
+    # all_actions.remove("U")
+    # all_actions.remove("U'")
+    # all_actions.remove("D")
+    # all_actions.remove("D'")
+
+    # for action in all_actions:
+    #     res = recurs_a_star(cubik, action, curr_manh, 0, 10, new_cubik.d1_db)
 
     #     if res != None:
     #         actions = res
