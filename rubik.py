@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import itertools
 import pandas as pd
+import math
 
 
 class Cubit:
@@ -89,6 +90,50 @@ class Cubik:
     d = [33, 34, 35, 36, 37, 38, 39, 40]
     b = [41, 42, 43, 44, 45, 46, 47, 48]
 
+    front_face_move = [ 4, 0, 2, 3, 5, 1, 6, 7,
+                        2, 1, 0, 0, 1, 2, 0, 0,
+                        4, 1, 2, 3, 8, 5, 6, 0, 7, 9, 10, 11,
+                        1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0
+                        ]
+
+    left_face_move = [  3, 1, 2, 7, 0, 5, 6, 4,
+                        1, 0, 0, 2, 2, 0, 0, 1,
+                        0, 5, 2, 3, 1, 9, 6, 7, 8, 4, 10, 11,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                        ]
+
+    back_face_move = [  0, 1, 6, 2, 4, 5, 7, 3,
+                        0, 0, 2, 1, 0, 0, 1, 2,
+                        0, 1, 6, 3, 4, 2, 10, 7, 8, 9, 5, 11,
+                        0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0
+                        ]
+
+    right_face_move = [ 0, 5, 1, 3, 4, 6, 2, 7,
+                        0, 2, 1, 0, 0, 1, 2, 0,
+                        0, 1, 2, 7, 4, 5, 3, 11, 8, 9, 10, 6,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                        ]
+
+    up_face_move = [1, 2, 3, 0, 4, 5, 6, 7,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                    ]
+
+    down_face_move = [  0, 1, 2, 3, 7, 4, 5, 6  ,
+                        0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 8,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                        ]
+
+    face_moves = [front_face_move, right_face_move, back_face_move, left_face_move, up_face_move, down_face_move]
+
+    move_to_int = [ "F", "R", "B", "L", "U", "D",
+                    "F2", "R2", "B2", "L2", "U2", "D2",
+                    "F'", "R'", "B'", "L'", "U'", "D'"
+                    ]
+
+
     up = [('UTL', 'UTR', 'UDR', 'UDL'), ('UTC', 'UCR', 'UDC', 'UCL'), ('LTL', 'BDR', 'RTL', 'FTL'), ('LTC', 'BDC', 'RTC', 'FTC'), ('LTR', 'BDL', 'RTR', 'FTR')]
     left = [('LTL', 'LTR', 'LDR', 'LDL'), ('LTC', 'LCR', 'LDC', 'LCL'),  ('UTL', 'FTL', 'DTL', 'BTL'), ('UCL', 'FCL', 'DCL', 'BCL'), ('UDL', 'FDL', 'DDL', 'BDL')]
     front = [('FTL', 'FTR', 'FDR', 'FDL'), ('FTC', 'FCR', 'FDC', 'FCL'), ('UDL', 'RTL', 'DTR', 'LDR'), ('UDC', 'RCL', 'DTC', 'LCR'), ('UDR', 'RDL', 'DTL', 'LTR')]
@@ -99,14 +144,19 @@ class Cubik:
     corners = [1,3,6,8,9,11,24,26,12,14,27,29,15,17,30,32,41,43,46,48,33,35,38,40]
     sides = [2,4,5,7,10,18,19,25,13,20,21,28,16,22,23,31,42,44,45,47,34,36,37,39]
 
-    corner_db = pd.read_csv("./corner_db.csv")
-    side_db = pd.read_csv("./side_db.csv")
-    d1_db = pd.read_csv("./dbs/side_d1_db.csv")
-    d2_db = pd.read_csv("./dbs/side_d2_db.csv")
-    d3_db = pd.read_csv("./dbs/side_d3_db.csv")
-    corner_db.columns = ['index', 'side', 'position', 'grade']
-    side_db.columns = ['index', 'side', 'position', 'grade']
-    all_db = pd.concat([corner_db, side_db], ignore_index=True)
+    edge_orient_table = open("./Tables/edge_orient_table.dat", 'rb').read()
+    edge_perm_corner_orient_table = open("./Tables/edge_perm_corner_orient_table.dat", 'rb').read()
+    corner_edge_perm_table = open("./Tables/corner_edge_perm_table.dat", 'rb').read()
+    final_table = open("./Tables/final_table.dat", 'rb').read()
+
+    # corner_db = pd.read_csv("./corner_db.csv")
+    # side_db = pd.read_csv("./side_db.csv")
+    # d1_db = pd.read_csv("./dbs/side_d1_db.csv")
+    # d2_db = pd.read_csv("./dbs/side_d2_db.csv")
+    # d3_db = pd.read_csv("./dbs/side_d3_db.csv")
+    # corner_db.columns = ['index', 'side', 'position', 'grade']
+    # side_db.columns = ['index', 'side', 'position', 'grade']
+    # all_db = pd.concat([corner_db, side_db], ignore_index=True)
 
     move_map = {'U': up, 'L': left, 'F': front, 'R': right, 'D': down, 'B': bottom,
                 "U'": tuple(tuple(reversed(c)) for c in reversed(up)),
@@ -122,6 +172,11 @@ class Cubik:
         self.came_from = []
         r = self.repr()
         self.hash = hash(r)
+        self.edge_orient = 0
+        self.edge_permutation = 0
+        self.corner_orientation = 205163983024656
+        self.corner_permutation = 16434824
+        self.heuristic_functions = [self.heuristic_stage1, self.heuristic_stage2, self.heuristic_stage3]
 
     def _rehash(self):
         self.hash = hash(self.repr())
@@ -165,8 +220,44 @@ class Cubik:
         c.faces = [face.copy() for face in self.faces]
         c.face_map = {name: c.faces[i] for i, name in enumerate('ULFRBD')}
         c.came_from = self.came_from[:]
+        c.corner_permutation = self.corner_permutation
+        c.corner_orientation = self.corner_orientation
+        c.edge_permutation = self.edge_permutation
+        c.edge_orient = self.edge_orient
         return c
     
+    def calculate_orient(self, move):
+        int_move = self.move_to_int.index(move)
+        direction = int(int_move / 6) + 1
+        int_move = int_move % 6
+        face_move = self.face_moves[int_move]
+
+        for n in range(direction):
+            new_ep = 0
+            new_cp = 0
+            new_co = 0
+            new_eo = 0
+            i = 0
+
+            for i in range(8):
+                new_cp |= ((self.corner_permutation >> face_move[i] * 3) & 0b111) << (i * 3)
+                orient = ((self.corner_permutation >> face_move[i] * 2) & 0b11)
+                orient = (orient + face_move[8 + i]) % 3
+
+                new_co |= orient << (i * 2)
+
+            for i in range(12):
+                new_ep |= ((self.edge_permutation >> (face_move[16 + i] * 4)) & 0b1111) << (i * 4)
+                orient = (self.edge_orient >> face_move[16 + i]) & 0b1
+                orient = (orient + face_move[28 + i]) % 2
+                new_eo |= orient << i
+
+            self.corner_permutation = new_cp
+            self.corner_orientation = new_co
+            self.edge_permutation = new_ep
+            self.edge_orient = new_eo
+
+
     def permute(self, seq, reverse=False):
         vals = [self.accessor(_) for _ in seq]
         if reverse:
@@ -183,6 +274,8 @@ class Cubik:
 
     def apply_moves(self, moves):
         for move in moves:
+            self.calculate_orient(move)
+
             if move[-1] == '2':
                 self.apply_permutations(self.move_map[move[0]])
                 self.apply_permutations(self.move_map[move[0]])
@@ -220,89 +313,84 @@ class Cubik:
                 raise ValueError("Invalid move:", move)
         return expand_moves
 
-    def get_new_pos(self, i):
-        line = list(itertools.chain(*[face.ve for face in self.faces]))
-        target_line = list(itertools.chain(*[face.ve for face in Cubik().faces]))
+    def n_choose_k(n, k):
+        if (n < k):
+            return 0
 
-        line = [c.v for c in line]
-        target_line = [c.v for c in target_line]
+        if (n == k or k == 0):
+            return 1
 
-        index = line.index(i)
+        return n_choose_k(n - 1, k - 1) + n_choose_k(n - 1, k)
 
-        return target_line[index]
+    def permutation_to_number(self, perm, size):
+        if (size <= 1):
+            return 0
 
-    def manh_distance_corner(self, actions=[]):
-        curr_cubik = self.copy()
-        curr_cubik.apply_moves(actions)
-        res = 0
+        next_perm = [0] * (size - 1)
 
-        for corner in curr_cubik.corners:
-            new_corner_pos = curr_cubik.get_new_pos(corner)
+        for i in range(1, size):
+            next_perm[i - 1] = perm[i]
 
-            if (new_corner_pos == corner):
-                continue
+            if (next_perm[i - 1] > perm[0]):
+                next_perm[i - 1] += 1
 
-            curr_dist = curr_cubik.corner_db[(curr_cubik.corner_db["side"] == corner) &
-                                       (curr_cubik.corner_db["position"] == new_corner_pos)]['grade'].min()
+        return math.factorial(size - 1) * perm[0] + self.permutation_to_number(next_perm, size - 1)
 
-            res += curr_dist
+    def combination_to_number(self, perm, size):
+        index = 0
+        num_ones = 0
+        i = size
 
-        return res
+        while (i > 0):
+            if perm[i - 1]:
+                num_ones += 1
+                index += self.n_choose_k(size - i, num_ones)
 
-    def manh_distance_side(self, actions=[]):
-        curr_cubik = self.copy()
-        curr_cubik.apply_moves(actions)
-        res = 0
+            i -= 1
 
-        for side in curr_cubik.sides:
-            new_side_pos = curr_cubik.get_new_pos(side)
+        return index
 
-            if (new_side_pos == side):
-                continue
+    def heuristic_stage1(self):
+        return self.edge_orient_table[self.edge_orient]
 
-            curr_dist = curr_cubik.side_db[(curr_cubik.side_db["side"] == side) &
-                                       (curr_cubik.side_db["position"] == new_side_pos)]['grade'].min()
+    def heuristic_stage2(self):
+        index = 0
+        k = 4
 
-            res += curr_dist
+        for i in range(1, 13):
+            if (k <= 0):
+                break
 
-        return res
+            element = (self.edge_permutation >> (i * 4)) & 0b1111
 
-    def manh_distance(self, cubits, actions=[]):
-        curr_cubik = self.copy()
-        curr_cubik.apply_moves(actions)
-        res = 0
+            if (element > 3 and element < 8):
+                index += n_choose_k(12 - i, k)
+                k += 1
 
-        for side in cubits:
-            new_side_pos = curr_cubik.get_new_pos(side)
+        return self.edge_perm_corner_orient_table[495 * self.corner_orientation + index]
 
-            if (new_side_pos == side):
-                continue
+    def heuristic_stage3(self):
+        edge_combination = [False] * 8
+        corner_perm = [0] * 8
+        j = 0
 
-            curr_dist = curr_cubik.all_db[(curr_cubik.all_db["side"] == side) &
-                                       (curr_cubik.all_db["position"] == new_side_pos)]['grade'].min()
+        for i in range(12):
+            if i == 4:
+                i = 8
 
-            res += curr_dist
+            element = (self.edge_permutation >> (i * 4)) & 0b1111
 
-        return res
+            if (element == 0 or element == 2 or element == 8 or element == 10):
+                edge_combination[j] = True
+            else:
+                edge_combination[j] = False
 
-    def other_distance(self, group_db, actions=[], cubits=range(1, 49)):
-        curr_cubik = self.copy()
-        curr_cubik.apply_moves(actions)
-        res = 0
+            j += 1
 
-        for corner in cubits:
-            new_corner_pos = curr_cubik.get_new_pos(corner)
+        for i in range(8):
+            corner_perm[i] = (self.corner_permutation >> (i * 3)) & 0b111
 
-            if (new_corner_pos == corner):
-                continue
-
-            tmp_db = group_db[(group_db['side'] == corner) &
-                              (group_db['position'] == new_corner_pos)]
-
-            if len(tmp_db) < 1:
-                res += 1
-
-        return res
+        return self.corner_edge_perm_table[70 * permutation_to_number(corner_perm, 8) + combination_to_number(edge_combination, 8)]
 
     def is_solved(self):
         return all(all(v.col == face.col for v in face.ve) for face in self.faces)
@@ -318,153 +406,64 @@ all_actions = ["U", "R", "F", "D", "L", "B",
                "U2", "R2", "F2", "D2", "L2", "B2"
                ]
 
-def recurs_a_star(cubik, action, prev_manh, i, max_dep, db, cubits):
-    if i >= max_dep:
-        return None
 
+def recurs_a_star(cubik, action, max_dep, stage=0):
     new_cubik = cubik.copy()
     new_cubik.apply_moves([action])
-    curr_manh = new_cubik.other_distance(db, cubits=cubits)
 
-    if curr_manh == 0:
-        return [action]
+    if max_dep == 0:
+        if new_cubik.heuristic_functions[stage]() == 0:
+            return [action]
 
-    if curr_manh > prev_manh:
+    if new_cubik.heuristic_functions[stage]() > max_dep:
         return None
 
-    for act in all_actions:
-        print("___________________________")
-        res = recurs_a_star(new_cubik, act, curr_manh, i+1, max_dep, db, cubits)
+    curr_actions = all_actions[:]
+    curr_actions.remove(action)
+
+    for act in curr_actions:
+        res = recurs_a_star(new_cubik, act, max_dep - 1)
 
         if res != None:
-            return res + [action]
+            return [action] + res
+
+    return None
 
 if __name__ == '__main__':
     cubik = Cubik()
 
     print(cubik.faces)
+    
     # cubik.apply_moves(["U2", "B2", "B", "R2", "U'", "B'", "L", "F'"])
     # cubik.apply_moves(["U", "R"])
-    cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
-    print(cubik.faces)
+    # cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
 
     actions = []
 
-    # new_cubik = cubik.copy()
-    # curr_manh = new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides)
-    # curr_manh2 = new_cubik.other_distance(new_cubik.d2_db)
-    # curr_manh3 = new_cubik.other_distance(new_cubik.d3_db)
-    # print("G1 distance =", curr_manh)
-    # print("G2 distance =", curr_manh2)
-    # print("G3 distance =", curr_manh3)
+    print("Curr max_depth:", cubik.edge_orient_table[cubik.edge_orient])
+    max_depth = cubik.edge_orient_table[cubik.edge_orient]
 
-    # for action in ["U"]:
-    #     res = recurs_a_star(cubik, action, curr_manh, 0, 3, new_cubik.d1_db, new_cubik.sides)
+    for depth in range(max_depth):
+        for action in all_actions:
+            actions = recurs_a_star(cubik, action, depth)
 
-    #     if res != None:
-    #         actions += res
-    #         break
+            if actions != None:
+                break
 
-    new_cubik = cubik.copy()
-    new_cubik.apply_moves(['U', "F'", 'L', 'R', 'D', 'U'])
-    print("distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
-
-    # new_cubik = cubik.copy()
-    # new_cubik.apply_moves(["U"])
-    # print("U distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
-    # new_cubik.apply_moves(["F'"])
-    # print("F' distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
-    # new_cubik.apply_moves(["L"])
-    # print("L distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
-    # new_cubik.apply_moves(["R"])
-    # print("R distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
-    # new_cubik.apply_moves(["D"])
-    # print("D distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
-    # new_cubik.apply_moves(["U"])
-    # print("U distance =", new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.sides))
-
-
-    # print(actions)
-
-    # new_cubik = cubik.copy()
-    # new_cubik.apply_moves(actions)
-    # curr_manh = new_cubik.other_distance(new_cubik.d1_db, cubits=new_cubik.corners)
-
-    # for action in all_actions:
-    #     res = recurs_a_star(cubik, action, curr_manh, 0, 6, new_cubik.d1_db, new_cubik.corners)
-
-    #     if res != None:
-    #         actions += res
-    #         break
-
-    # print(actions)
-
-    # new_cubik = cubik.copy()
-    # new_cubik.apply_moves(actions)
-    # curr_manh = new_cubik.other_distance(new_cubik.d2_db)
-
-    # all_actions.remove("U")
-    # all_actions.remove("U'")
-    # all_actions.remove("D")
-    # all_actions.remove("D'")
-
-    # for action in all_actions:
-    #     res = recurs_a_star(cubik, action, curr_manh, 0, 10, new_cubik.d1_db)
-
-    #     if res != None:
-    #         actions = res
-    #         break
-
-    # new_cubik = cubik.copy()
-    # new_cubik.apply_moves(actions)
-    # curr_corn_dist = new_cubik.manh_distance([4,5,18,19,20,21,36,37])
-
-    # current_actions = all_actions[:]
-    # del current_actions[current_actions.index("U")]
-    # del current_actions[current_actions.index("D")]
-    # del current_actions[current_actions.index("U'")]
-    # del current_actions[current_actions.index("D'")]
-
-    # curr_manh = new_cubik.other_corner_distance([], ["U", "D", "U'", "D'"])
-
-    # while curr_manh > 0:
-    #     for action in all_actions:
-    #         best_manh = curr_manh
-    #         best_action = None
-
-    #         tmp_manh = new_cubik.other_corner_distance([action], ["U", "D", "U'", "D'"])
-
-    #         if tmp_manh < best_manh:
-    #             best_manh = tmp_manh
-    #             best_action = action
-
-    #     if (best_action != None):
-    #         curr_manh = best_manh
-    #         new_cubik.apply_moves([action])
-    #         actions += [action]
-
-    #         print("Current distance =", curr_manh)
-    #     else:
-    #         break
+    print(actions)
 
     cubik.apply_moves(actions)
 
-    print(cubik.faces)
+    print("Curr max_depth:", cubik.heuristic_stage3())
+    max_depth = cubik.heuristic_stage3()
 
-    print("Resolve =", actions)
-    print("Solved -", cubik.is_solved())
+    for depth in range(max_depth):
+        for action in all_actions:
+            actions = recurs_a_star(cubik, action, depth, stage=2)
 
-    # print(cubik.manh_distance_corner(["B"]))
-    # print(cubik.manh_distance_corner(["B"]))
-    # print(cubik.manh_distance_corner(["R"]))
-    # print(cubik.manh_distance_corner(["U'"]))
-    # print(cubik.manh_distance_corner(["B'"]))
-    # print(cubik.manh_distance_corner(["L"]))
-    # print(cubik.manh_distance_corner(["L"]))
+            if actions != None:
+                break
 
-    # cubik.apply_moves(['R', 'B'])
-    # print(cubik.is_solved(), cubik.hash)
-    # cubik.apply_moves(["B'","R'"])
-    # print(cubik.is_solved(), cubik.hash)
-    # cubik.apply_moves(cubik.parse_moves("R2 D' B' D F2 R F2 R2 U L' F2 U' B' L2 R D B' R' B2 L2 F2 L2 R2 U2 D2"))
-    # print(cubik.is_solved(), cubik.hash)
+    print(actions)
+    cubik.apply_moves(actions)
+
